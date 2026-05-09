@@ -1,26 +1,179 @@
 @import "tailwindcss";
 
+/* ===== Light / Dark theme variables ===== */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --v-page: #F5F0E8;
+  --v-page-alt: #FAFAF8;
+  --v-surface: #FAFAF8;
+  --v-heading: #0A2E1A;
+  --v-body: rgba(10, 46, 26, 0.6);
+  --v-subtle: rgba(10, 46, 26, 0.35);
+  --v-accent: #16A34A;
+  --v-accent-glow: #4ADE80;
+  --v-edge: rgba(10, 46, 26, 0.08);
+  --v-glow-soft: rgba(22, 163, 74, 0.06);
+  --v-pill-bg: rgba(22, 163, 74, 0.08);
+  --v-pill-border: rgba(22, 163, 74, 0.2);
+  --v-pill-text: #16A34A;
+  --v-btn-bg: #0A2E1A;
+  --v-btn-fg: #F5F0E8;
+  --v-ghost-border: rgba(10, 46, 26, 0.2);
+  --v-ghost-text: #0A2E1A;
+  --v-check: #16A34A;
+  --v-icon-dim: rgba(10, 46, 26, 0.6);
+  --v-scrollbar-track: #F5F0E8;
+  --v-scrollbar-thumb: #B8B09A;
+  --v-scrollbar-hover: #0A2E1A;
+  --v-selection-bg: rgba(22, 163, 74, 0.2);
+  --v-selection-fg: #0A2E1A;
 }
 
+.dark {
+  --v-page: #061509;
+  --v-page-alt: #0A2E1A;
+  --v-surface: #0F2318;
+  --v-heading: #FAFAF8;
+  --v-body: #B8B09A;
+  --v-subtle: rgba(184, 176, 154, 0.5);
+  --v-accent: #4ADE80;
+  --v-accent-glow: #4ADE80;
+  --v-edge: rgba(74, 222, 128, 0.1);
+  --v-glow-soft: rgba(74, 222, 128, 0.04);
+  --v-pill-bg: rgba(74, 222, 128, 0.05);
+  --v-pill-border: rgba(74, 222, 128, 0.2);
+  --v-pill-text: #4ADE80;
+  --v-btn-bg: #4ADE80;
+  --v-btn-fg: #061509;
+  --v-ghost-border: rgba(74, 222, 128, 0.3);
+  --v-ghost-text: #4ADE80;
+  --v-check: #4ADE80;
+  --v-icon-dim: rgba(74, 222, 128, 0.7);
+  --v-scrollbar-track: #061509;
+  --v-scrollbar-thumb: #0A2E1A;
+  --v-scrollbar-hover: #16A34A;
+  --v-selection-bg: rgba(74, 222, 128, 0.25);
+  --v-selection-fg: #FAFAF8;
+}
+
+/* ===== Tailwind v4 theme tokens ===== */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  /* Fonts */
+  --font-raleway: var(--font-raleway);
+  --font-libre: var(--font-libre);
+  --font-mono: var(--font-mono);
+
+  /* Raw palette (always available, theme-independent) */
+  --color-dark-green: #0A2E1A;
+  --color-mid-green: #16A34A;
+  --color-bright-green: #4ADE80;
+  --color-beige: #F5F0E8;
+  --color-warm-white: #FAFAF8;
+  --color-muted-beige: #B8B09A;
+  --color-dark-surface: #061509;
+  --color-card-surface: #0F2318;
+
+  /* Semantic tokens (swap with theme) */
+  --color-page: var(--v-page);
+  --color-page-alt: var(--v-page-alt);
+  --color-surface: var(--v-surface);
+  --color-heading: var(--v-heading);
+  --color-body: var(--v-body);
+  --color-subtle: var(--v-subtle);
+  --color-accent: var(--v-accent);
+  --color-accent-glow: var(--v-accent-glow);
+  --color-edge: var(--v-edge);
+  --color-glow-soft: var(--v-glow-soft);
+  --color-pill-bg: var(--v-pill-bg);
+  --color-pill-border: var(--v-pill-border);
+  --color-pill-text: var(--v-pill-text);
+  --color-btn-bg: var(--v-btn-bg);
+  --color-btn-fg: var(--v-btn-fg);
+  --color-ghost-border: var(--v-ghost-border);
+  --color-ghost-text: var(--v-ghost-text);
+  --color-v-check: var(--v-check);
+  --color-icon-dim: var(--v-icon-dim);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* ===== Custom utilities ===== */
+@utility font-raleway {
+  font-family: var(--font-raleway), sans-serif;
+}
+@utility font-libre {
+  font-family: var(--font-libre), serif;
+}
+@utility font-jetbrains {
+  font-family: var(--font-mono), monospace;
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@utility glass {
+  background: rgba(15, 35, 24, 0.6);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(74, 222, 128, 0.1);
+}
+
+@utility glass-light {
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(10, 46, 26, 0.08);
+  box-shadow: 0 1px 3px rgba(10, 46, 26, 0.04);
+}
+
+/* ===== Scrollbar ===== */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--v-scrollbar-track); }
+::-webkit-scrollbar-thumb { background: var(--v-scrollbar-thumb); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--v-scrollbar-hover); }
+
+/* ===== Selection ===== */
+::selection {
+  background: var(--v-selection-bg);
+  color: var(--v-selection-fg);
+}
+
+/* ===== Futuristic candidate card effects ===== */
+.candidate-card {
+  position: relative;
+  isolation: isolate;
+}
+.candidate-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    160deg,
+    rgba(74, 222, 128, 0.3),
+    rgba(74, 222, 128, 0.04) 40%,
+    rgba(255, 255, 255, 0.06) 60%,
+    rgba(74, 222, 128, 0.2)
+  );
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  -webkit-mask-composite: xor;
+  pointer-events: none;
+  opacity: 0.7;
+  transition: opacity 0.5s ease;
+}
+.candidate-card:hover::before {
+  opacity: 1;
+}
+
+@keyframes shimmer-line {
+  0%, 100% { opacity: 0.3; transform: translateX(-60%); }
+  50% { opacity: 1; transform: translateX(60%); }
+}
+.card-shimmer-line {
+  animation: shimmer-line 4s ease-in-out infinite;
+}
+
+@keyframes score-pulse {
+  0%, 100% { box-shadow: 0 8px 24px -8px rgba(74, 222, 128, 0.5); }
+  50% { box-shadow: 0 8px 32px -6px rgba(74, 222, 128, 0.8); }
+}
+.ai-score-badge {
+  animation: score-pulse 3s ease-in-out infinite;
 }
