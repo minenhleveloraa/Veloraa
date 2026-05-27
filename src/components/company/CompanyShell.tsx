@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   Briefcase,
+  ChevronRight,
   CreditCard,
   LayoutDashboard,
   LogOut,
@@ -15,6 +16,7 @@ import {
   Settings,
   Sparkles,
   Sun,
+  User,
   Users,
   X,
 } from "lucide-react";
@@ -71,6 +73,7 @@ export default function CompanyShell({
   reviewStatus,
   userEmail,
   userName,
+  logoUrl = null,
   messagesUnread = 0,
 }: {
   children: React.ReactNode;
@@ -79,6 +82,7 @@ export default function CompanyShell({
   reviewStatus: ReviewStatus;
   userEmail: string | null;
   userName: string | null;
+  logoUrl?: string | null;
   messagesUnread?: number;
 }) {
   const pathname = usePathname();
@@ -103,6 +107,7 @@ export default function CompanyShell({
         reviewStatus={reviewStatus}
         userEmail={userEmail}
         userName={userName}
+        logoUrl={logoUrl}
         approved={approved}
         pathname={pathname}
         unreadByHref={unreadByHref}
@@ -132,6 +137,7 @@ export default function CompanyShell({
         userName={userName}
         companyName={companyName}
         planName={planName}
+        logoUrl={logoUrl}
       />
     </div>
   );
@@ -147,6 +153,7 @@ function CompanyTopNav({
   reviewStatus,
   userEmail,
   userName,
+  logoUrl,
   approved,
   pathname,
   unreadByHref,
@@ -156,6 +163,7 @@ function CompanyTopNav({
   reviewStatus: ReviewStatus;
   userEmail: string | null;
   userName: string | null;
+  logoUrl: string | null;
   approved: boolean;
   pathname: string | null;
   unreadByHref: Record<string, number>;
@@ -219,6 +227,7 @@ function CompanyTopNav({
             userName={userName}
             companyName={companyName}
             planName={planName}
+            logoUrl={logoUrl}
             approved={approved}
           />
         </div>
@@ -272,7 +281,7 @@ function DesktopNavLink({
       <span className="relative">
         <Icon
           className={cn(
-            "h-4 w-4 transition-transform duration-300 ease-out",
+            "h-4 w-4 transition-transform duration-300",
             "group-hover:-translate-y-[1px] group-hover:scale-110",
             active && "text-accent"
           )}
@@ -382,18 +391,20 @@ function AvatarMenu({
   userName,
   companyName,
   planName,
+  logoUrl,
   approved,
 }: {
   userEmail: string | null;
   userName: string | null;
   companyName: string | null;
   planName: string;
+  logoUrl: string | null;
   approved: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
   const ref = useRef<HTMLDivElement>(null);
-  const initial = (userName?.trim()?.[0] ?? userEmail?.trim()?.[0] ?? "?")
+  const initial = (companyName?.trim()?.[0] ?? userName?.trim()?.[0] ?? userEmail?.trim()?.[0] ?? "?")
     .toUpperCase();
 
   useEffect(() => {
@@ -426,11 +437,21 @@ function AvatarMenu({
           open && "border-accent/40"
         )}
       >
-        <span className="flex h-7 w-7 items-center justify-center rounded-full bg-accent/15 text-xs font-bold text-accent font-raleway">
-          {initial}
+        <span className="flex h-7 w-7 items-center justify-center overflow-hidden rounded-full bg-accent/15 text-xs font-bold text-accent font-raleway">
+          {logoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={logoUrl}
+              alt=""
+              className="h-full w-full object-cover"
+              loading="lazy"
+            />
+          ) : (
+            initial
+          )}
         </span>
         <span className="hidden max-w-[120px] truncate text-xs font-semibold text-heading sm:inline-block font-raleway">
-          {userName ?? companyName ?? "Account"}
+          {companyName ?? userName ?? "Account"}
         </span>
       </button>
 
@@ -445,26 +466,56 @@ function AvatarMenu({
             className="absolute right-0 mt-2 w-72 overflow-hidden rounded-xl border border-edge bg-surface shadow-2xl shadow-black/10 backdrop-blur-xl"
             role="menu"
           >
-            <div className="border-b border-edge p-4">
-              <p className="truncate text-sm font-semibold text-heading font-raleway">
-                {companyName ?? "Your company"}
-              </p>
-              <p className="mt-0.5 truncate text-[11px] text-subtle font-jetbrains">
-                {userEmail ?? "—"}
-              </p>
-              <div className="mt-2 flex items-center gap-2">
-                <span className="rounded-full border border-accent/30 bg-accent/5 px-2 py-0.5 text-[10px] uppercase tracking-[0.08em] text-accent font-jetbrains">
-                  {planName} plan
-                </span>
-                {!approved && (
-                  <span className="rounded-full border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 text-[10px] uppercase tracking-[0.08em] text-amber-600 font-jetbrains">
-                    Pending review
-                  </span>
+            {/* Clickable profile preview header — opens /company/profile. */}
+            <Link
+              href="/company/profile"
+              onClick={() => setOpen(false)}
+              className="group flex items-center gap-3 border-b border-edge p-4 transition-colors hover:bg-page-alt"
+            >
+              <span className="relative flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-accent/15 text-base font-bold text-accent font-raleway">
+                {logoUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={logoUrl}
+                    alt=""
+                    className="h-full w-full object-cover"
+                    loading="lazy"
+                  />
+                ) : (
+                  initial
                 )}
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-semibold text-heading font-raleway">
+                  {companyName ?? "Your company"}
+                </p>
+                <p className="mt-0.5 truncate text-[11px] text-subtle font-jetbrains">
+                  {userEmail ?? "—"}
+                </p>
+                <div className="mt-1.5 flex items-center gap-1.5">
+                  <span className="rounded-full border border-accent/30 bg-accent/5 px-2 py-0.5 text-[10px] uppercase tracking-[0.08em] text-accent font-jetbrains">
+                    {planName} plan
+                  </span>
+                  {!approved && (
+                    <span className="rounded-full border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 text-[10px] uppercase tracking-[0.08em] text-amber-600 font-jetbrains">
+                      Pending
+                    </span>
+                  )}
+                </div>
+                <span className="mt-1.5 inline-flex items-center gap-0.5 text-[10px] font-semibold text-accent transition-transform group-hover:translate-x-0.5 font-jetbrains">
+                  View profile
+                  <ChevronRight className="h-3 w-3" />
+                </span>
               </div>
-            </div>
+            </Link>
 
             <div className="p-1.5">
+              <MenuItem
+                href="/company/profile"
+                icon={User}
+                label="My profile"
+                onSelect={() => setOpen(false)}
+              />
               <MenuItem
                 href="/company/settings"
                 icon={Settings}
@@ -706,6 +757,7 @@ function MoreSheet({
   userName,
   companyName,
   planName,
+  logoUrl,
 }: {
   open: boolean;
   onClose: () => void;
@@ -714,11 +766,12 @@ function MoreSheet({
   userName: string | null;
   companyName: string | null;
   planName: string;
+  logoUrl: string | null;
 }) {
   const { theme, toggle, mounted } = useTheme();
   const [pending, startTransition] = useTransition();
   const dark = mounted && theme === "dark";
-  const initial = (userName?.trim()?.[0] ?? userEmail?.trim()?.[0] ?? "?")
+  const initial = (companyName?.trim()?.[0] ?? userName?.trim()?.[0] ?? userEmail?.trim()?.[0] ?? "?")
     .toUpperCase();
 
   useEffect(() => {
@@ -765,42 +818,69 @@ function MoreSheet({
             </div>
 
             <div className="flex items-start gap-3 px-5 pb-4 pt-4">
-              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-accent/15 text-base font-bold text-accent font-raleway">
-                {initial}
-              </span>
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-semibold text-heading font-raleway">
-                  {companyName ?? "Your company"}
-                </p>
-                <p className="mt-0.5 truncate text-[11px] text-subtle font-jetbrains">
-                  {userEmail ?? "—"}
-                </p>
-                <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-                  <span className="rounded-full border border-accent/30 bg-accent/5 px-2 py-0.5 text-[10px] uppercase tracking-[0.08em] text-accent font-jetbrains">
-                    {planName} plan
-                  </span>
-                  {!approved && (
-                    <span className="rounded-full border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 text-[10px] uppercase tracking-[0.08em] text-amber-600 font-jetbrains">
-                      Pending
-                    </span>
+              <Link
+                href="/company/profile"
+                onClick={onClose}
+                className="group flex min-w-0 flex-1 items-start gap-3 rounded-xl -m-1 p-1 transition-colors hover:bg-page-alt"
+              >
+                <span className="relative flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-accent/15 text-base font-bold text-accent font-raleway">
+                  {logoUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={logoUrl}
+                      alt=""
+                      className="h-full w-full object-cover"
+                      loading="lazy"
+                    />
+                  ) : (
+                    initial
                   )}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-semibold text-heading font-raleway">
+                    {companyName ?? "Your company"}
+                  </p>
+                  <p className="mt-0.5 truncate text-[11px] text-subtle font-jetbrains">
+                    {userEmail ?? "—"}
+                  </p>
+                  <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                    <span className="rounded-full border border-accent/30 bg-accent/5 px-2 py-0.5 text-[10px] uppercase tracking-[0.08em] text-accent font-jetbrains">
+                      {planName} plan
+                    </span>
+                    {!approved && (
+                      <span className="rounded-full border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 text-[10px] uppercase tracking-[0.08em] text-amber-600 font-jetbrains">
+                        Pending
+                      </span>
+                    )}
+                  </div>
+                  <span className="mt-1 inline-flex items-center gap-0.5 text-[10px] font-semibold text-accent transition-transform group-hover:translate-x-0.5 font-jetbrains">
+                    View profile
+                    <ChevronRight className="h-3 w-3" />
+                  </span>
                 </div>
-              </div>
+              </Link>
               <button
                 type="button"
                 onClick={onClose}
                 aria-label="Close menu"
-                className="flex h-9 w-9 items-center justify-center rounded-full border border-edge bg-page-alt text-body transition-colors hover:border-accent/40 hover:text-accent"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-edge bg-page-alt text-body transition-colors hover:border-accent/40 hover:text-accent"
               >
                 <X className="h-4 w-4" />
               </button>
             </div>
 
-            <div className="grid grid-cols-2 gap-2 px-5">
+            <div className="grid grid-cols-3 gap-2 px-5">
+              <SheetTile
+                href="/company/profile"
+                icon={User}
+                label="Profile"
+                sub="View public"
+                onSelect={onClose}
+              />
               <SheetTile
                 href="/company/subscription"
                 icon={CreditCard}
-                label="Subscription"
+                label="Billing"
                 sub="Manage plan"
                 onSelect={onClose}
               />

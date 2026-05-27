@@ -2,6 +2,7 @@ import CompanyShell from "@/components/company/CompanyShell";
 import RealtimeProvider from "@/components/realtime/RealtimeProvider";
 import { planFor } from "@/lib/company/options";
 import { requireCompany } from "@/lib/company/guard";
+import { createClient } from "@/lib/supabase/server";
 import { unreadCountForUser } from "@/lib/messaging/queries";
 
 export default async function CompanyShellLayout({
@@ -19,6 +20,18 @@ export default async function CompanyShellLayout({
   const messagesUnread =
     reviewStatus === "approved" ? await unreadCountForUser(profile.id) : 0;
 
+  // Sign the logo URL once at the layout level so the avatar control,
+  // the dropdown, and the mobile sheet all share it without duplicate
+  // round-trips.
+  let logoUrl: string | null = null;
+  if (application?.logo_path) {
+    const supabase = await createClient();
+    const { data } = await supabase.storage
+      .from("company-logos")
+      .createSignedUrl(application.logo_path, 60 * 10);
+    logoUrl = data?.signedUrl ?? null;
+  }
+
   return (
     <RealtimeProvider userId={profile.id} initialMessagesUnread={messagesUnread}>
       <CompanyShell
@@ -27,6 +40,7 @@ export default async function CompanyShellLayout({
         reviewStatus={reviewStatus}
         userEmail={profile.email ?? null}
         userName={profile.full_name ?? null}
+        logoUrl={logoUrl}
         messagesUnread={messagesUnread}
       >
         {children}

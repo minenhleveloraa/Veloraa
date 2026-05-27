@@ -12,6 +12,10 @@ import {
   type Currency,
 } from "@/lib/billing/plans";
 
+// Currency is determined silently by the v_currency cookie set in proxy.ts
+// from x-vercel-ip-country. ZA → ZAR (PayFast), everyone else → USD (Paddle).
+// No user-facing toggle exists; this is intentional per SUBSCRIPTION_PLAN §3.
+
 const EASE_OUT: [number, number, number, number] = [0.25, 0.1, 0.25, 1];
 
 const sectionVariants = {
@@ -62,7 +66,7 @@ const faqs = [
   },
   {
     q: "What payment methods do you accept?",
-    a: "International subscribers pay via Paddle (credit card, PayPal, Apple Pay). South African subscribers can pay via PayFast (credit card, EFT, instant EFT) in ZAR.",
+    a: "We accept the major cards, Apple/Google Pay, and PayPal worldwide via Paddle. South African subscribers pay in ZAR via PayFast (card, EFT, instant EFT). Your currency and provider are picked automatically based on your location — no toggle needed.",
   },
   {
     q: "What roles can I hire for?",
@@ -119,46 +123,6 @@ function BillingToggle({
           2 MONTHS FREE
         </motion.span>
       )}
-    </div>
-  );
-}
-
-function CurrencyToggle({
-  currency,
-  onToggle,
-}: {
-  currency: Currency;
-  onToggle: () => void;
-}) {
-  return (
-    <div className="flex items-center justify-center gap-3">
-      <span
-        className={cn(
-          "text-xs font-medium transition-colors font-jetbrains",
-          currency === "USD" ? "text-heading" : "text-subtle"
-        )}
-      >
-        USD ($)
-      </span>
-      <button
-        onClick={onToggle}
-        className="relative h-6 w-[44px] rounded-full border border-edge bg-edge transition-colors"
-        aria-label="Toggle currency"
-      >
-        <motion.div
-          className="absolute top-0.5 h-4 w-4 rounded-full bg-accent"
-          animate={{ left: currency === "ZAR" ? 23 : 3 }}
-          transition={{ type: "spring", stiffness: 500, damping: 30 }}
-        />
-      </button>
-      <span
-        className={cn(
-          "text-xs font-medium transition-colors font-jetbrains",
-          currency === "ZAR" ? "text-heading" : "text-subtle"
-        )}
-      >
-        ZAR (R)
-      </span>
     </div>
   );
 }
@@ -268,13 +232,6 @@ function PricingCard({
               ? `Billed annually (${symbol}${annualTotal.toLocaleString()}/yr)`
               : "\u00A0"}
           </p>
-          {!isFree && currency === "USD" && (
-            <p className="mt-0.5 text-[11px] text-subtle/60 font-raleway">
-              {isAnnual
-                ? `~ R${(plan.zar.monthlyEquivalent).toLocaleString()}/mo in ZAR`
-                : `~ R${plan.zar.monthly.toLocaleString()}/mo in ZAR`}
-            </p>
-          )}
         </div>
 
         {/* CTA */}
@@ -448,7 +405,8 @@ function FAQItem({ q, a }: { q: string; a: string }) {
 
 export default function Pricing({ defaultCurrency = "USD" }: { defaultCurrency?: Currency }) {
   const [isAnnual, setIsAnnual] = useState(false);
-  const [currency, setCurrency] = useState<Currency>(defaultCurrency);
+  // Currency is locked to the cookie value — no user-facing toggle.
+  const currency = defaultCurrency;
   const prefersReduced = useReducedMotion();
 
   const motionSection = prefersReduced
@@ -492,12 +450,9 @@ export default function Pricing({ defaultCurrency = "USD" }: { defaultCurrency?:
                 isAnnual={isAnnual}
                 onToggle={() => setIsAnnual(!isAnnual)}
               />
-              <CurrencyToggle
-                currency={currency}
-                onToggle={() =>
-                  setCurrency((c) => (c === "USD" ? "ZAR" : "USD"))
-                }
-              />
+              <p className="text-[11px] text-subtle/70 font-jetbrains">
+                Prices shown in {currency === "ZAR" ? "ZAR (South Africa)" : "USD (international)"}
+              </p>
             </div>
           </motion.div>
         </div>

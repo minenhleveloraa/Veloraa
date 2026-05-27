@@ -735,3 +735,198 @@ Other recommended candidates are available on your dashboard.
     text,
   };
 }
+
+// ---------------------------------------------------------------------
+// Billing — payment receipt
+// ---------------------------------------------------------------------
+
+export function paymentReceiptEmail({
+  companyName,
+  invoiceNumber,
+  planName,
+  interval,
+  amountFormatted,
+  periodStart,
+  periodEnd,
+  pdfUrl,
+  manageHref,
+}: {
+  companyName: string;
+  invoiceNumber: string;
+  planName: string;
+  interval: "monthly" | "annual";
+  amountFormatted: string;
+  periodStart: string;
+  periodEnd: string;
+  pdfUrl: string | null;
+  manageHref: string;
+}) {
+  const downloadLine = pdfUrl
+    ? `<p><a href="${pdfUrl}" style="color:#16A34A;font-weight:600">Download PDF receipt</a></p>`
+    : "";
+  const html = shell({
+    preheader: `Receipt for ${planName} — ${invoiceNumber}`,
+    title: `Thanks for renewing Veloraa ${planName}`,
+    body: `
+      <p>Hi ${companyName},</p>
+      <p>Your ${interval} subscription renewed successfully.</p>
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-top:8px;border-collapse:collapse">
+        <tr>
+          <td style="padding:6px 0;color:#71717A;font-size:13px">Invoice</td>
+          <td style="padding:6px 0;font-size:13px;text-align:right;color:#0A2E1A">${invoiceNumber}</td>
+        </tr>
+        <tr>
+          <td style="padding:6px 0;color:#71717A;font-size:13px">Plan</td>
+          <td style="padding:6px 0;font-size:13px;text-align:right;color:#0A2E1A">${planName} (${interval})</td>
+        </tr>
+        <tr>
+          <td style="padding:6px 0;color:#71717A;font-size:13px">Amount</td>
+          <td style="padding:6px 0;font-size:14px;font-weight:600;text-align:right;color:#0A2E1A">${amountFormatted}</td>
+        </tr>
+        <tr>
+          <td style="padding:6px 0;color:#71717A;font-size:13px">Period</td>
+          <td style="padding:6px 0;font-size:13px;text-align:right;color:#0A2E1A">${periodStart} – ${periodEnd}</td>
+        </tr>
+      </table>
+      ${downloadLine}
+    `,
+    ctaHref: manageHref,
+    ctaLabel: "Manage subscription",
+  });
+  const text = `Receipt for Veloraa ${planName} — ${invoiceNumber}
+
+Plan: ${planName} (${interval})
+Amount: ${amountFormatted}
+Period: ${periodStart} – ${periodEnd}
+${pdfUrl ? `\nDownload: ${pdfUrl}` : ""}
+
+Manage your subscription: ${manageHref}
+
+— The Veloraa team`;
+
+  return {
+    subject: `Receipt for ${planName} — ${invoiceNumber}`,
+    html,
+    text,
+  };
+}
+
+// ---------------------------------------------------------------------
+// Billing — payment failed
+// ---------------------------------------------------------------------
+
+export function paymentFailedEmail({
+  companyName,
+  planName,
+  amountFormatted,
+  manageHref,
+}: {
+  companyName: string;
+  planName: string;
+  amountFormatted: string;
+  manageHref: string;
+}) {
+  const html = shell({
+    preheader: "We couldn't process your latest Veloraa payment.",
+    title: "Payment failed — please update your card",
+    body: `
+      <p>Hi ${companyName},</p>
+      <p>We tried to charge ${amountFormatted} for your <strong>${planName}</strong>
+      subscription but the payment was declined by your bank.</p>
+      <p>Your access stays on for a short grace period while we retry.
+      Please update your payment method to avoid interruption.</p>
+    `,
+    ctaHref: manageHref,
+    ctaLabel: "Update payment method",
+  });
+  const text = `We couldn't process your Veloraa ${planName} payment of ${amountFormatted}.
+
+Update your card: ${manageHref}
+
+— The Veloraa team`;
+  return {
+    subject: "Action required: payment failed",
+    html,
+    text,
+  };
+}
+
+// ---------------------------------------------------------------------
+// Billing — subscription cancelled
+// ---------------------------------------------------------------------
+
+export function subscriptionCancelledEmail({
+  companyName,
+  planName,
+  periodEnd,
+  manageHref,
+}: {
+  companyName: string;
+  planName: string;
+  periodEnd: string;
+  manageHref: string;
+}) {
+  const html = shell({
+    preheader: `Your Veloraa ${planName} subscription is cancelled.`,
+    title: "Your subscription has been cancelled",
+    body: `
+      <p>Hi ${companyName},</p>
+      <p>We've cancelled your Veloraa <strong>${planName}</strong> subscription.
+      You'll keep full access through <strong>${periodEnd}</strong>; after that
+      your account will revert to the Free plan.</p>
+      <p>Changed your mind? You can reactivate at any time from the
+      subscription dashboard — your saved settings are kept for 90 days.</p>
+    `,
+    ctaHref: manageHref,
+    ctaLabel: "Reactivate subscription",
+  });
+  const text = `Your Veloraa ${planName} subscription is cancelled. You keep access until ${periodEnd}.
+
+Reactivate: ${manageHref}
+
+— The Veloraa team`;
+  return {
+    subject: `Subscription cancelled — access until ${periodEnd}`,
+    html,
+    text,
+  };
+}
+
+// ---------------------------------------------------------------------
+// Billing — subscription upgraded / changed plan
+// ---------------------------------------------------------------------
+
+export function subscriptionUpgradedEmail({
+  companyName,
+  newPlanName,
+  amountFormatted,
+  manageHref,
+}: {
+  companyName: string;
+  newPlanName: string;
+  amountFormatted: string;
+  manageHref: string;
+}) {
+  const html = shell({
+    preheader: `Welcome to Veloraa ${newPlanName}.`,
+    title: `You're now on ${newPlanName}`,
+    body: `
+      <p>Hi ${companyName},</p>
+      <p>Your subscription has been upgraded to <strong>${newPlanName}</strong>
+      at ${amountFormatted}. All ${newPlanName}-tier features are active
+      immediately — no need to refresh.</p>
+    `,
+    ctaHref: manageHref,
+    ctaLabel: "Open dashboard",
+  });
+  const text = `You're now on Veloraa ${newPlanName} (${amountFormatted}).
+
+Open dashboard: ${manageHref}
+
+— The Veloraa team`;
+  return {
+    subject: `Welcome to Veloraa ${newPlanName}`,
+    html,
+    text,
+  };
+}

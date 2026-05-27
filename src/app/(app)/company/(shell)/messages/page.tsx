@@ -1,6 +1,7 @@
 import { requireApprovedCompany } from "@/lib/company/guard";
-import MessagingPanelLive from "@/components/messaging/MessagingPanelLive";
 import { listThreadsForUser } from "@/lib/messaging/queries";
+import { createAdminClient } from "@/lib/supabase/admin";
+import CompanyMessagesClient from "@/components/company/CompanyMessagesClient";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -31,21 +32,29 @@ export default async function CompanyMessagesPage() {
   const initialThreadId =
     threads.find((t) => t.kind === "admin")?.id ?? threads[0]?.id;
 
+  // Fetch published jobs for the interview scheduler
+  const admin = createAdminClient();
+  const { data: pubJobRows } = await admin
+    .from("company_jobs")
+    .select("id, title")
+    .eq("company_id", profile.id)
+    .eq("status", "published")
+    .order("created_at", { ascending: false });
+  const companyJobs = (pubJobRows ?? []).map((j: { id: string; title: string }) => ({
+    id: j.id,
+    title: j.title,
+  }));
+
   // Full-viewport layout that sits under the fixed company top nav (h-16)
   // and above the fixed mobile bottom-tab bar (~4.5rem + safe-area).
   return (
     <div className="fixed inset-x-0 top-16 bottom-[calc(4.5rem_+_env(safe-area-inset-bottom))] bg-page lg:bottom-0">
-      <MessagingPanelLive
-        initialThreads={threads}
+      <CompanyMessagesClient
+        threads={threads}
         viewerUserId={profile.id}
-        title="Messages"
-        description="Talk to the Veloraa team and the candidates we match you with."
-        viewer={{ name: companyName, initials: viewerInitials }}
-        scheduleKinds={["candidate"]}
-        emptyThreadCopy={{
-          title: "Pick a conversation",
-          body: "Start with the Veloraa team on the left — they'll help you get the most out of the platform.",
-        }}
+        viewerName={companyName}
+        viewerInitials={viewerInitials}
+        companyJobs={companyJobs}
         initialThreadId={initialThreadId}
       />
     </div>

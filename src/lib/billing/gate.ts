@@ -1,5 +1,7 @@
 import "server-only";
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getEffectivePlan, type PlanId } from "@/lib/billing/plans";
 
 export type Feature =
   | "post_job"
@@ -16,7 +18,11 @@ export type Feature =
   | "priority_matching"
   | "custom_reports";
 
-const FEATURE_GATES: Record<Feature, ("free" | "growth" | "scale")[]> = {
+/**
+ * Plans that grant each feature. "post_job" is unique because Free is
+ * allowed up to one job ever (see canAccess for the count check).
+ */
+const FEATURE_GATES: Record<Feature, PlanId[]> = {
   post_job: ["free", "growth", "scale"],
   talent_search: ["growth", "scale"],
   full_candidate_profile: ["growth", "scale"],
@@ -32,6 +38,26 @@ const FEATURE_GATES: Record<Feature, ("free" | "growth" | "scale")[]> = {
   custom_reports: ["scale"],
 };
 
+/**
+ * The minimum plan required to access a feature. Used by
+ * `<FeatureLock>` to render an accurate upsell label.
+ */
+export const REQUIRED_PLAN: Record<Feature, PlanId> = {
+  post_job: "free",
+  talent_search: "growth",
+  full_candidate_profile: "growth",
+  messaging_open: "growth",
+  pipeline: "growth",
+  interview_scheduling: "growth",
+  watchlist: "growth",
+  talent_alerts: "growth",
+  analytics: "growth",
+  company_profile: "growth",
+  team_seats: "scale",
+  priority_matching: "scale",
+  custom_reports: "scale",
+};
+
 export async function canAccess(feature: Feature): Promise<boolean> {
   const supabase = await createClient();
   const {
@@ -41,23 +67,34 @@ export async function canAccess(feature: Feature): Promise<boolean> {
 
   const { data: employer } = await supabase
     .from("company_applications")
-    .select("subscription_plan, subscription_status, has_used_free_post")
+    .select(
+      "subscription_plan, subscription_status, current_period_end, has_used_free_post"
+    )
     .eq("user_id", user.id)
     .single();
 
   if (!employer) return false;
 
-  const plan = employer.subscription_plan as string;
-  const status = employer.subscription_status as string;
+  const effective = getEffectivePlan(employer);
 
-  const hasActiveAccess = status === "active" || status === "free";
-  if (!hasActiveAccess) return false;
-
-  if (feature === "post_job" && plan === "free") {
+  // Free plan + post_job: only allowed if they haven't used the free post.
+  if (feature === "post_job" && effective.id === "free") {
     return !employer.has_used_free_post;
   }
 
-  return FEATURE_GATES[feature].includes(plan as "free" | "growth" | "scale");
+  return FEATURE_GATES[feature].includes(effective.id);
+}
+
+/**
+ * Server-side guard: redirect to the subscription page (with the
+ * requested feature in the query string) if the user lacks access.
+ * Use at the top of any protected page or server action.
+ */
+export async function assertFeature(feature: Feature): Promise<void> {
+  const ok = await canAccess(feature);
+  if (!ok) {
+    redirect(`/company/subscription?upgrade=${feature}`);
+  }
 }
 
 export function getFeatureGates() {

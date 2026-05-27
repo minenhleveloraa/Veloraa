@@ -5,8 +5,8 @@ import Nav from "@/components/marketing/Nav";
 
 /**
  * Conditionally renders the global marketing-style `<Nav />` for authed app
- * routes. Areas with their own custom chrome (currently `/company/*`) opt out
- * so they can own the entire top surface without a doubled-up nav bar.
+ * routes. Company and talent flows either have their own chrome or a focused
+ * onboarding surface, so they own the entire top surface.
  */
 export default function AppChrome({
   children,
@@ -15,10 +15,7 @@ export default function AppChrome({
 }) {
   const pathname = usePathname();
   const hideMarketingNav =
-    (pathname?.startsWith("/company") &&
-      !pathname?.startsWith("/company/onboarding")) ||
-    (pathname?.startsWith("/talent") &&
-      !pathname?.startsWith("/talent/onboarding"));
+    pathname?.startsWith("/company") || pathname?.startsWith("/talent");
 
   return (
     <>

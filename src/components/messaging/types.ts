@@ -36,4 +36,8 @@ export interface Thread {
   /** When true, composer is read-only and shows `disabledReason`. */
   disabled?: boolean;
   disabledReason?: string;
+  /** The talent user id on this thread (company_candidate threads). */
+  talentUserId?: string | null;
+  /** The company user id on this thread (company_candidate threads). */
+  companyUserId?: string | null;
 }

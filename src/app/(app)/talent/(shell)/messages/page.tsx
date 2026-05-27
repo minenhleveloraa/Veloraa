@@ -1,7 +1,7 @@
-import MessagingPanelLive from "@/components/messaging/MessagingPanelLive";
 import { listThreadsForUser } from "@/lib/messaging/queries";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+import TalentMessagesClient from "@/components/talent/TalentMessagesClient";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -41,16 +41,11 @@ export default async function TalentMessagesPage() {
 
   return (
     <div className="fixed inset-x-0 top-16 bottom-[calc(4.5rem_+_env(safe-area-inset-bottom))] bg-page lg:bottom-0">
-      <MessagingPanelLive
-        initialThreads={threads}
+      <TalentMessagesClient
+        threads={threads}
         viewerUserId={user.id}
-        title="Messages"
-        description="Message the Veloraa team and hiring companies you're connected with."
-        viewer={{ name: displayName, initials: viewerInitials }}
-        emptyThreadCopy={{
-          title: "No conversations yet",
-          body: "When you're in the talent pool, the Veloraa team and hiring partners can reach you here. Your Veloraa thread appears as soon as you're live.",
-        }}
+        viewerName={displayName}
+        viewerInitials={viewerInitials}
         initialThreadId={initialThreadId}
       />
     </div>

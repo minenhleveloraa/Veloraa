@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+﻿import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import type {
@@ -36,6 +36,14 @@ import {
   Zap,
 } from "lucide-react";
 
+import TalentDashboardBackdrop from "@/components/talent/dashboard/TalentDashboardBackdrop";
+import TalentActivityPulse from "@/components/talent/dashboard/TalentActivityPulse";
+import type { PulseDay } from "@/components/talent/dashboard/TalentActivityPulse";
+import JobRecommendationsFeed from "@/components/talent/dashboard/JobRecommendationsFeed";
+import CompaniesInterestedCard from "@/components/talent/dashboard/CompaniesInterestedCard";
+import ApplicationFunnelCard from "@/components/talent/dashboard/ApplicationFunnelCard";
+import TalentUpgradeCard from "@/components/talent/dashboard/TalentUpgradeCard";
+
 export default async function TalentDashboardPage() {
   const supabase = await createClient();
   const {
@@ -68,7 +76,7 @@ export default async function TalentDashboardPage() {
   const firstName = profile?.full_name?.split(" ")[0] ?? "there";
 
   // ---------------------------------------------------------------
-  // Terminal state — passed every stage, live in the talent pool.
+  // Terminal state â€” passed every stage, live in the talent pool.
   // ---------------------------------------------------------------
   if (
     app?.review_status === "approved" &&
@@ -95,7 +103,7 @@ export default async function TalentDashboardPage() {
 }
 
 // =====================================================================
-// PIPELINE VIEW — pending / in review / rejected / assessment / interview
+// PIPELINE VIEW â€” pending / in review / rejected / assessment / interview
 // =====================================================================
 
 function PipelineView({
@@ -123,12 +131,12 @@ function PipelineView({
       : "review";
 
   return (
-    <div className="mx-auto max-w-3xl px-4 pb-24 pt-24 sm:px-6 sm:pt-32 lg:px-8">
-      <span className="mb-3 inline-block text-xs uppercase tracking-[0.08em] text-accent font-jetbrains">
+    <div className="mx-auto max-w-3xl px-4 pb-20 pt-20 sm:px-6 sm:pb-24 sm:pt-32 lg:px-8">
+      <span className="mb-3 inline-block text-[11px] uppercase tracking-[0.06em] text-accent font-jetbrains sm:text-xs sm:tracking-[0.08em]">
         Your application
       </span>
 
-      {/* Hero — tone matches pipeline status */}
+      {/* Hero â€” tone matches pipeline status */}
       {reviewStatus === "rejected" ? (
         <RejectedHero
           firstName={firstName}
@@ -143,7 +151,7 @@ function PipelineView({
       ) : (
         <>
           <h1 className="text-3xl font-bold text-heading sm:text-4xl font-raleway">
-            Hi {firstName} — you&apos;re in the queue.
+            Hi {firstName} â€” you&apos;re in the queue.
           </h1>
           <p className="mt-3 text-base leading-relaxed text-body font-libre italic">
             We&apos;ll be in touch within 24 hours about your next step.
@@ -151,7 +159,7 @@ function PipelineView({
         </>
       )}
 
-      {/* AI grade preview — only when we still have the analysis & the
+      {/* AI grade preview â€” only when we still have the analysis & the
           application hasn't been rejected. */}
       {analysis?.status === "ready" && reviewStatus !== "rejected" && (
         <Link
@@ -166,9 +174,9 @@ function PipelineView({
               Your AI grade
             </p>
             <p className="mt-0.5 text-lg font-bold text-heading font-raleway">
-              {analysis.overall_score}/100 ·{" "}
+              {analysis.overall_score}/100 Â·{" "}
               <span className="text-accent">
-                {analysis.expertise_level ?? "—"}
+                {analysis.expertise_level ?? "â€”"}
               </span>
             </p>
             <p className="mt-1 text-xs text-body font-raleway">
@@ -179,7 +187,7 @@ function PipelineView({
       )}
 
       {/* Pipeline */}
-      <div className="mt-10 space-y-3">
+      <div className="mt-8 space-y-2.5 sm:mt-10 sm:space-y-3">
         <StageRow
           status={app?.stage_1_submitted_at ? "done" : "active"}
           num="01"
@@ -204,12 +212,12 @@ function PipelineView({
           title="AI analysis"
           subtitle={
             analysis?.status === "ready"
-              ? "Complete — see your grade above."
+              ? "Complete â€” see your grade above."
               : analysis?.status === "pending"
-              ? "Running right now…"
+              ? "Running right nowâ€¦"
               : analysis?.status === "failed"
               ? "Something went wrong. Re-run from stage 2."
-              : "Queued — we'll kick this off shortly."
+              : "Queued â€” we'll kick this off shortly."
           }
         />
         <StageRow
@@ -226,11 +234,11 @@ function PipelineView({
           title="Human review"
           subtitle={
             reviewStatus === "approved"
-              ? "You're through — congrats."
+              ? "You're through â€” congrats."
               : failedAt === "review"
               ? "Not this time. Reapply when ready."
               : analysis?.status === "ready"
-              ? "In review — we'll email you within 24 hours."
+              ? "In review â€” we'll email you within 24 hours."
               : "Queued after AI analysis."
           }
         />
@@ -248,11 +256,11 @@ function PipelineView({
           title="Technical assessment"
           subtitle={
             technicalStatus === "passed"
-              ? "Cleared the technical bar — on to the interview."
+              ? "Cleared the technical bar â€” on to the interview."
               : failedAt === "technical"
               ? "Not this time. Review the feedback above."
               : reviewStatus === "approved"
-              ? "Active — watch your inbox for the assessment link."
+              ? "Active â€” watch your inbox for the assessment link."
               : "Lightweight, tailored to your expertise."
           }
         />
@@ -274,7 +282,7 @@ function PipelineView({
               : failedAt === "interview"
               ? "Not this time. Review the feedback above."
               : technicalStatus === "passed"
-              ? "Up next — we'll propose time windows by email."
+              ? "Up next â€” we'll propose time windows by email."
               : "45 minutes with a senior in your field."
           }
         />
@@ -307,12 +315,12 @@ function TechnicalHero({ firstName }: { firstName: string }) {
         Technical assessment
       </div>
       <h1 className="text-3xl font-bold text-heading sm:text-4xl font-raleway">
-        Nice work {firstName} — you&apos;re through.
+        Nice work {firstName} â€” you&apos;re through.
       </h1>
       <p className="mt-3 text-base leading-relaxed text-body font-libre italic">
         Our team has reviewed your application. Next up is a lightweight
         technical assessment tailored to your expertise. We&apos;ll email
-        you the link shortly — it usually takes 45–60 minutes and you can
+        you the link shortly â€” it usually takes 45â€“60 minutes and you can
         take it on your own schedule.
       </p>
     </div>
@@ -332,7 +340,7 @@ function InterviewHero({ firstName }: { firstName: string }) {
       <p className="mt-3 text-base leading-relaxed text-body font-libre italic">
         The final step is a 45-minute interview with a senior engineer in
         your field. We&apos;ll email you shortly with a couple of time
-        windows — once that&apos;s through, your profile goes live to
+        windows â€” once that&apos;s through, your profile goes live to
         vetted employers.
       </p>
     </div>
@@ -370,7 +378,7 @@ function RejectedHero({
       ? "We appreciate the time you put into the take-home. After a careful review, we're not moving forward to the interview stage this cycle."
       : failedAt === "interview"
       ? "Thanks for making time to interview with us. After comparing notes, we've decided not to move forward with your application at this stage."
-      : "We've decided not to move forward at this time. This isn't final — use the time to deepen your portfolio and come back stronger.";
+      : "We've decided not to move forward at this time. This isn't final â€” use the time to deepen your portfolio and come back stronger.";
 
   return (
     <div className="rounded-2xl border-2 border-amber-500/40 bg-linear-to-br from-amber-500/5 via-surface to-surface p-6 sm:p-8">
@@ -379,7 +387,7 @@ function RejectedHero({
         Not this time
       </div>
       <h1 className="text-2xl font-bold text-heading sm:text-3xl font-raleway">
-        Thanks {firstName} — {headline.toLowerCase()}.
+        Thanks {firstName} â€” {headline.toLowerCase()}.
       </h1>
       <p className="mt-3 text-base leading-relaxed text-body font-libre italic">
         {intro}
@@ -440,30 +448,47 @@ function StageRow({
       : Clock;
 
   return (
-    <div className="flex items-center gap-4 rounded-2xl border border-edge bg-surface p-5">
+    <div className="flex items-center gap-3 rounded-xl border border-edge bg-surface p-3.5 sm:gap-4 sm:rounded-2xl sm:p-5">
       <div
-        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${badge}`}
+        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full sm:h-10 sm:w-10 ${badge}`}
       >
-        <Icon className="h-5 w-5" />
+        <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
       </div>
-      <div className="flex-1">
-        <div className="flex items-center gap-3">
-          <span className="text-[11px] uppercase tracking-[0.08em] text-accent font-jetbrains">
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <span className="text-[10px] uppercase tracking-[0.06em] text-accent font-jetbrains sm:text-[11px] sm:tracking-[0.08em]">
             {num}
           </span>
-          <p className="text-sm font-semibold text-heading font-raleway">
+          <p className="truncate text-[13px] font-semibold text-heading font-raleway sm:text-sm">
             {title}
           </p>
         </div>
-        <p className="mt-0.5 text-xs text-body font-raleway">{subtitle}</p>
+        <p className="mt-0.5 text-[11px] leading-relaxed text-body font-raleway sm:text-xs">{subtitle}</p>
       </div>
     </div>
   );
 }
 
 // =====================================================================
-// LIVE TALENT DASHBOARD — interview passed, profile is live
+// LIVE TALENT DASHBOARD â€” interview passed, profile is live
 // =====================================================================
+
+const WEEKDAY_LETTERS = ["S", "M", "T", "W", "T", "F", "S"];
+
+function buildEmptyPulseDays(): PulseDay[] {
+  const out: PulseDay[] = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date();
+    d.setUTCDate(d.getUTCDate() - i);
+    d.setUTCHours(0, 0, 0, 0);
+    out.push({
+      dateISO: d.toISOString(),
+      label: WEEKDAY_LETTERS[d.getUTCDay()],
+      value: 0,
+    });
+  }
+  return out;
+}
 
 function LiveTalentDashboard({
   firstName,
@@ -481,9 +506,8 @@ function LiveTalentDashboard({
   const location = app.location ?? "Remote";
   const scorePct = analysis?.overall_score ?? null;
   const level = analysis?.expertise_level ?? null;
+  const skills = app.skills ?? [];
 
-  // Profile completeness — cheap heuristic that rewards filling the
-  // stage-1 fields that actually show up to employers.
   const completenessChecks = [
     !!app.bio && app.bio.length >= 60,
     !!app.headline,
@@ -494,369 +518,256 @@ function LiveTalentDashboard({
     (app.work_experience?.length ?? 0) >= 1,
   ];
   const completeness = Math.round(
-    (completenessChecks.filter(Boolean).length / completenessChecks.length) *
-      100
+    (completenessChecks.filter(Boolean).length / completenessChecks.length) * 100
   );
 
-  return (
-    <div className="mx-auto max-w-6xl px-4 pb-24 pt-24 sm:px-6 sm:pt-28 lg:px-8">
-      {/* Hero */}
-      <section className="overflow-hidden rounded-2xl border-[3px] border-accent bg-linear-to-br from-accent/10 via-surface to-surface p-6 sm:p-8">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-accent/40 bg-accent/10 px-3 py-1 text-[10px] uppercase tracking-[0.08em] text-accent font-jetbrains">
-            <Trophy className="h-3 w-3" />
-            Live on Veloraa
-          </span>
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-edge bg-surface px-3 py-1 text-[10px] uppercase tracking-[0.08em] text-body font-jetbrains">
-            <Zap className="h-3 w-3 text-accent" />
-            Top 1% verified
-          </span>
-        </div>
-        <div className="mt-4 flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
-          <div className="min-w-0">
-            <h1 className="text-3xl font-bold text-heading sm:text-4xl font-raleway">
-              Welcome back, {firstName}.
-            </h1>
-            <p className="mt-3 max-w-2xl text-base leading-relaxed text-body font-libre italic">
-              Your profile is live to pre-vetted employers. Keep it fresh,
-              reply quickly, and the best roles come to you.
-            </p>
-            <div className="mt-4 flex flex-wrap gap-2">
-              <Link
-                href="/talent/messages"
-                className="inline-flex items-center gap-1.5 rounded-lg bg-accent px-5 py-2.5 text-xs font-semibold text-white transition-all hover:opacity-90 hover:shadow-[0_0_24px_rgba(74,222,128,0.35)] font-raleway"
-              >
-                <MessageSquare className="h-3.5 w-3.5" />
-                Open messages
-              </Link>
-              <Link
-                href="/talent/jobs"
-                className="inline-flex items-center gap-1.5 rounded-lg border border-ghost-border bg-surface px-5 py-2.5 text-xs font-semibold text-heading transition-all hover:border-accent/30 hover:text-accent hover:shadow-[0_12px_30px_-20px_rgba(74,222,128,0.45)] font-raleway"
-              >
-                <Briefcase className="h-3.5 w-3.5" />
-                Browse jobs
-              </Link>
-            </div>
-          </div>
+  // TODO: Replace with real data queries when profile-views tracking lands
+  const pulseDays = buildEmptyPulseDays();
 
-          {/* AI grade mini-card */}
-          {scorePct != null && (
-            <div className="flex shrink-0 items-center gap-3 rounded-xl border border-accent/30 bg-surface/70 px-5 py-4 backdrop-blur-sm">
-              <div className="relative flex h-14 w-14 items-center justify-center">
-                <svg
-                  className="absolute inset-0 h-14 w-14 -rotate-90"
-                  viewBox="0 0 44 44"
-                >
-                  <circle
-                    cx="22"
-                    cy="22"
-                    r="18"
-                    className="stroke-edge"
-                    fill="none"
-                    strokeWidth="4"
-                  />
-                  <circle
-                    cx="22"
-                    cy="22"
-                    r="18"
-                    className="stroke-accent"
-                    fill="none"
-                    strokeWidth="4"
-                    strokeDasharray={`${(scorePct / 100) * 113.1} 113.1`}
-                    strokeLinecap="round"
-                  />
-                </svg>
-                <span className="relative text-sm font-bold text-heading font-jetbrains">
-                  {scorePct}
+  const now = new Date();
+  const dateStamp = now.toISOString().slice(0, 10).replace(/-/g, ".");
+  const timeStamp = now.toISOString().slice(11, 16);
+
+  return (
+    <div className="relative isolate">
+      <TalentDashboardBackdrop />
+
+      <div className="relative z-10 mx-auto max-w-7xl px-4 pb-20 pt-4 sm:px-6 sm:pb-24 sm:pt-8 lg:px-8 lg:pt-10">
+        {/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+        {/* HERO                                                      */}
+        {/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+        <section className="group relative overflow-hidden rounded-[1.5rem] border border-accent/30 bg-gradient-to-br from-surface via-surface to-page-alt p-4 shadow-[0_30px_80px_-30px_rgba(0,0,0,0.35)] sm:rounded-[2rem] sm:p-9">
+          {/* Inset highlight ring */}
+          <span aria-hidden className="pointer-events-none absolute inset-0 rounded-[1.5rem] ring-1 ring-inset ring-accent/15 sm:rounded-[2rem]" />
+
+          {/* SVG dot-grid background */}
+          <svg aria-hidden className="absolute inset-0 h-full w-full text-heading opacity-[0.05]" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <pattern id="talent-hero-grid" x="0" y="0" width="22" height="22" patternUnits="userSpaceOnUse">
+                <circle cx="1" cy="1" r="1" fill="currentColor" />
+              </pattern>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#talent-hero-grid)" />
+          </svg>
+
+          {/* Topographic orbiting rings */}
+          <svg aria-hidden viewBox="0 0 400 400" className="velora-orbit-reverse absolute -right-32 -top-32 h-[26rem] w-[26rem] text-accent opacity-[0.30]">
+            <g fill="none" stroke="currentColor" strokeWidth="0.6">
+              <ellipse cx="200" cy="200" rx="190" ry="118" />
+              <ellipse cx="200" cy="200" rx="160" ry="100" />
+              <ellipse cx="200" cy="200" rx="130" ry="82" />
+              <ellipse cx="200" cy="200" rx="100" ry="64" />
+              <ellipse cx="200" cy="200" rx="70" ry="45" />
+              <ellipse cx="200" cy="200" rx="40" ry="26" />
+            </g>
+            <circle cx="200" cy="200" r="4" fill="currentColor" opacity="0.7" />
+          </svg>
+
+          {/* Soft accent glow â€” bottom-left */}
+          <span aria-hidden className="pointer-events-none absolute -bottom-32 -left-20 h-72 w-72 rounded-full bg-accent/12 blur-3xl" />
+
+          {/* Corner cut marks */}
+          <CornerMark className="left-3 top-3" rotate={0} />
+          <CornerMark className="right-3 top-3" rotate={90} />
+          <CornerMark className="right-3 bottom-3" rotate={180} />
+          <CornerMark className="left-3 bottom-3" rotate={270} />
+
+          {/* Scan beam */}
+          <span aria-hidden className="absolute inset-x-6 bottom-0 h-px overflow-hidden">
+            <span className="velora-scan block h-full w-1/2 bg-gradient-to-r from-transparent via-accent to-transparent" />
+          </span>
+
+          {/* Glass shimmer overlay */}
+          <span aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden rounded-[1.5rem] sm:rounded-[2rem]">
+            <span className="velora-glass-shimmer absolute inset-y-0 left-0 w-1/3 bg-gradient-to-r from-transparent via-white/[0.06] to-transparent" />
+          </span>
+
+          {/* â”€â”€ Content â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+          <div className="relative">
+            {/* System status eyebrow */}
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-2 text-[9px] uppercase tracking-[0.14em] font-jetbrains sm:mb-6 sm:gap-3 sm:text-[10px] sm:tracking-[0.18em]">
+              <div className="flex items-center gap-2 text-accent">
+                <span className="relative flex h-2 w-2">
+                  <span aria-hidden className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent opacity-60" />
+                  <span className="relative inline-flex h-2 w-2 rounded-full bg-accent" />
                 </span>
+                SYS Â· ONLINE
               </div>
-              <div>
-                <p className="text-[10px] uppercase tracking-[0.08em] text-accent font-jetbrains">
-                  AI grade
-                </p>
-                <p className="text-sm font-semibold text-heading font-raleway">
-                  {level ?? "Engineer"}
-                </p>
+              <div className="flex items-center gap-3 text-subtle">
+                <span className="hidden sm:inline">NODE Â· {firstName.slice(0, 3).toUpperCase() || "VEL"}</span>
+                <span aria-hidden className="hidden h-3 w-px bg-edge sm:inline-block" />
+                <span>{dateStamp}</span>
+                <span aria-hidden className="h-3 w-px bg-edge" />
+                <span>{timeStamp} UTC</span>
               </div>
             </div>
-          )}
+
+            <div className="flex flex-col items-center gap-5 sm:flex-row sm:items-start sm:gap-8">
+              {/* AI score halo */}
+              {scorePct != null && (
+                <div className="relative h-28 w-28 shrink-0 sm:h-36 sm:w-36">
+                  <span aria-hidden className="absolute inset-0 -m-3 rounded-full bg-accent/10 blur-2xl" />
+                  {/* Outer dashed orbit */}
+                  <svg aria-hidden viewBox="0 0 120 120" className="velora-orbit absolute inset-[-18px] h-[calc(100%+36px)] w-[calc(100%+36px)] text-accent">
+                    <circle cx="60" cy="60" r="58" fill="none" stroke="currentColor" strokeWidth="0.8" strokeDasharray="2 6" opacity="0.55" />
+                  </svg>
+                  {/* Reverse inner orbit */}
+                  <svg aria-hidden viewBox="0 0 120 120" className="velora-orbit-reverse absolute inset-[-32px] h-[calc(100%+64px)] w-[calc(100%+64px)] text-accent">
+                    <circle cx="60" cy="60" r="58" fill="none" stroke="currentColor" strokeWidth="0.5" strokeDasharray="1 14" opacity="0.4" />
+                  </svg>
+                  {/* Cardinal ticks */}
+                  <svg aria-hidden viewBox="0 0 120 120" className="absolute inset-[-18px] h-[calc(100%+36px)] w-[calc(100%+36px)] text-accent">
+                    <g stroke="currentColor" strokeWidth="1.4" opacity="0.6">
+                      <line x1="60" y1="1" x2="60" y2="7" />
+                      <line x1="60" y1="113" x2="60" y2="119" />
+                      <line x1="1" y1="60" x2="7" y2="60" />
+                      <line x1="113" y1="60" x2="119" y2="60" />
+                    </g>
+                  </svg>
+                  {/* Score ring */}
+                  <div className="relative flex h-full w-full items-center justify-center overflow-hidden rounded-[1.75rem] bg-surface shadow-[0_0_50px_-10px_rgba(74,222,128,0.55)] ring-[3px] ring-accent/40">
+                    <div className="relative flex flex-col items-center">
+                      <svg className="absolute inset-0 h-full w-full -rotate-90" viewBox="0 0 80 80">
+                        <circle cx="40" cy="40" r="32" className="stroke-edge" fill="none" strokeWidth="4" />
+                        <circle cx="40" cy="40" r="32" className="stroke-accent" fill="none" strokeWidth="4" strokeDasharray={`${(scorePct / 100) * 201.1} 201.1`} strokeLinecap="round" />
+                      </svg>
+                      <span className="relative text-2xl font-bold text-heading font-jetbrains">{scorePct}</span>
+                      <span className="relative mt-0.5 text-[9px] uppercase tracking-[0.14em] text-accent font-jetbrains">{level ?? "Score"}</span>
+                    </div>
+                  </div>
+                  {/* Floating status pip */}
+                  <span aria-hidden className="velora-pulse-soft absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full border border-accent/40 bg-page text-accent shadow-md">
+                    <span className="h-2 w-2 rounded-full bg-accent" />
+                  </span>
+                </div>
+              )}
+
+              <div className="flex-1 text-center sm:text-left">
+                <div className="mb-2.5 flex flex-wrap items-center justify-center gap-1.5 sm:mb-3 sm:gap-2 sm:justify-start">
+                  <span className="inline-flex items-center gap-1 rounded-full border border-accent/40 bg-accent/10 px-2 py-0.5 text-[9px] uppercase tracking-[0.06em] text-accent font-jetbrains sm:gap-1.5 sm:px-3 sm:py-1 sm:text-[11px] sm:tracking-[0.08em]">
+                    <Trophy className="h-3 w-3 sm:h-3.5 sm:w-3.5" />Live on Veloraa
+                  </span>
+                  <span className="inline-flex items-center gap-1 rounded-full border border-edge bg-surface/60 px-2 py-0.5 text-[9px] uppercase tracking-[0.06em] text-body font-jetbrains backdrop-blur-sm sm:gap-1.5 sm:px-3 sm:py-1 sm:text-[11px] sm:tracking-[0.08em]">
+                    <Zap className="h-2.5 w-2.5 text-accent sm:h-3 sm:w-3" />Top 1% verified
+                  </span>
+                </div>
+
+                <h1 className="text-2xl font-bold leading-[1.05] text-heading sm:text-4xl lg:text-5xl font-raleway">
+                  Welcome back, <span className="text-accent">{firstName}</span>.
+                </h1>
+                <p className="mt-2 max-w-2xl text-[13px] leading-relaxed text-body font-libre italic sm:mt-3 sm:text-base">
+                  Your profile is live to pre-vetted employers. Keep it fresh, reply quickly, and the best roles come to you.
+                </p>
+
+                {/* Skills pills — scrollable on mobile */}
+                {skills.length > 0 && (
+                  <div className="mt-3 flex gap-1 overflow-x-auto pb-1 scrollbar-none sm:mt-4 sm:gap-1.5 sm:flex-wrap">
+                    {skills.slice(0, 6).map((s) => (
+                      <span key={s} className="shrink-0 rounded-full bg-pill-bg px-2 py-0.5 text-[9px] font-medium text-pill-text font-raleway sm:px-2.5 sm:py-1 sm:text-[10px]">{s}</span>
+                    ))}
+                    {skills.length > 6 && (
+                      <span className="shrink-0 rounded-full border border-edge bg-surface px-2 py-0.5 text-[9px] font-medium text-subtle font-raleway sm:px-2.5 sm:py-1 sm:text-[10px]">+{skills.length - 6}</span>
+                    )}
+                  </div>
+                )}
+
+                <div className="mt-4 flex flex-col gap-1.5 sm:mt-5 sm:flex-row sm:flex-wrap sm:gap-2">
+                  <Link href="/talent/messages" className="group/cta inline-flex items-center justify-center gap-1.5 rounded-full bg-accent px-4 py-2 text-[11px] font-semibold text-white transition-all hover:-translate-y-0.5 hover:opacity-95 hover:shadow-[0_0_28px_rgba(74,222,128,0.5)] font-raleway sm:px-5 sm:py-2.5 sm:text-xs">
+                    <MessageSquare className="h-3 w-3 sm:h-3.5 sm:w-3.5" />Open messages
+                    <span aria-hidden className="ml-1 h-1 w-1 rounded-full bg-white/80 transition-transform group-hover/cta:scale-150" />
+                  </Link>
+                  <Link href="/talent/jobs" className="inline-flex items-center justify-center gap-1.5 rounded-full border border-edge bg-surface/60 px-4 py-2 text-[11px] font-semibold text-heading backdrop-blur-sm transition-all hover:border-accent/40 hover:text-accent font-raleway sm:px-5 sm:py-2.5 sm:text-xs">
+                    <Briefcase className="h-3 w-3 sm:h-3.5 sm:w-3.5" />Browse jobs
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+        {/* KPI STRIP                                                  */}
+        {/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+        <section className="mt-4 grid grid-cols-2 gap-2.5 sm:mt-6 sm:grid-cols-4 sm:gap-4">
+          <KpiCard label="Profile views" value="0" hint="Last 30 days" icon={Eye} />
+          <KpiCard label="Inbound messages" value="0" hint="From hiring teams" icon={MessageSquare} />
+          <KpiCard label="Saved roles" value="0" hint="Across all companies" icon={Bookmark} />
+          <KpiCard label="Interview offers" value="0" hint="Pending response" icon={CalendarClock} />
+        </section>
+
+        {/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+        {/* MAIN GRID                                                  */}
+        {/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+        <div className="mt-5 grid gap-4 sm:mt-8 sm:gap-6 lg:grid-cols-3">
+          {/* Left column â€” 2/3 */}
+          <div className="space-y-4 sm:space-y-6 lg:col-span-2">
+            <TalentActivityPulse days={pulseDays} prevWeekTotal={0} />
+            <JobRecommendationsFeed />
+          </div>
+
+          {/* Right column â€” 1/3 */}
+          <aside className="space-y-4 sm:space-y-6">
+            <ProfileSnapshot
+              name={displayName}
+              headline={headline}
+              location={location}
+              completeness={completeness}
+              skills={skills}
+            />
+            <CompaniesInterestedCard />
+            <TalentUpgradeCard />
+          </aside>
         </div>
-      </section>
 
-      {/* KPI strip */}
-      <section className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
-        <KpiCard label="Profile views" value="0" hint="Last 30 days" icon={Eye} />
-        <KpiCard label="Inbound messages" value="0" hint="From hiring teams" icon={MessageSquare} />
-        <KpiCard label="Saved roles" value="0" hint="Across all companies" icon={Bookmark} />
-        <KpiCard label="Interview offers" value="0" hint="Pending response" icon={CalendarClock} />
-      </section>
-
-      {/* Main grid */}
-      <div className="mt-8 grid gap-6 lg:grid-cols-3">
-        {/* LEFT: opportunities feed + recent activity */}
-        <div className="space-y-6 lg:col-span-2">
-          <OpportunitiesCard displayName={displayName} headline={headline} />
-          <RecentActivity />
+        {/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+        {/* APPLICATION FUNNEL â€” full-width below the grid             */}
+        {/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+        <div className="mt-4 sm:mt-6">
+          <ApplicationFunnelCard />
         </div>
-
-        {/* RIGHT: profile snapshot + quick actions */}
-        <aside className="space-y-6">
-          <ProfileSnapshot
-            name={displayName}
-            headline={headline}
-            location={location}
-            completeness={completeness}
-          />
-          <AvailabilityCard />
-          <QuickActions />
-        </aside>
       </div>
     </div>
   );
 }
 
-// ---------------------------------------------------------------------
-// Live dashboard parts
-// ---------------------------------------------------------------------
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Corner mark (sci-fi accent)
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-function KpiCard({
-  label,
-  value,
-  hint,
-  icon: Icon,
-}: {
-  label: string;
-  value: string;
-  hint: string;
-  icon: React.ComponentType<{ className?: string }>;
-}) {
+function CornerMark({ className, rotate }: { className?: string; rotate: 0 | 90 | 180 | 270 }) {
   return (
-    <div className="rounded-2xl border border-edge bg-surface p-4 transition-all duration-300 hover:-translate-y-1 hover:border-accent/30 hover:shadow-[0_24px_60px_-36px_rgba(10,46,26,0.32)] sm:p-5">
-      <div className="flex items-center justify-between">
-        <p className="text-[10px] uppercase tracking-[0.1em] text-subtle font-jetbrains">
-          {label}
-        </p>
-        <Icon className="h-4 w-4 text-accent" />
+    <svg aria-hidden viewBox="0 0 16 16" fill="none" className={`absolute h-3.5 w-3.5 text-accent/55 ${className ?? ""}`} style={{ transform: `rotate(${rotate}deg)` }}>
+      <path d="M 1 7 L 1 1 L 7 1" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// KPI card
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+function KpiCard({ label, value, hint, icon: Icon }: { label: string; value: string; hint: string; icon: React.ComponentType<{ className?: string }> }) {
+  return (
+    <div className="group relative overflow-hidden rounded-xl border border-edge bg-surface p-3 transition-all duration-300 hover:-translate-y-1 hover:border-accent/30 hover:shadow-[0_24px_60px_-36px_rgba(10,46,26,0.32)] sm:rounded-2xl sm:p-5">
+      {/* Glass shimmer */}
+      <span aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden rounded-xl sm:rounded-2xl">
+        <span className="velora-glass-shimmer absolute inset-y-0 left-0 w-1/3 bg-gradient-to-r from-transparent via-white/[0.05] to-transparent" />
+      </span>
+      <div className="relative flex items-center justify-between gap-2">
+        <p className="truncate text-[9px] uppercase tracking-[0.08em] text-subtle font-jetbrains sm:text-[10px] sm:tracking-widest">{label}</p>
+        <Icon className="h-3.5 w-3.5 shrink-0 text-accent sm:h-4 sm:w-4" />
       </div>
-      <p className="mt-2 text-2xl font-bold text-heading sm:text-3xl font-raleway">
-        {value}
-      </p>
-      <p className="mt-1 text-[11px] text-subtle font-raleway">{hint}</p>
+      <p className="relative mt-1.5 text-xl font-bold text-heading font-raleway sm:mt-2 sm:text-3xl">{value}</p>
+      <p className="relative mt-0.5 truncate text-[10px] text-subtle font-raleway sm:mt-1 sm:text-[11px]">{hint}</p>
     </div>
   );
 }
 
-interface FakeOpportunity {
-  id: string;
-  company: string;
-  title: string;
-  location: string;
-  stack: string[];
-  compensation: string;
-  matchScore: number;
-  locked?: boolean;
-}
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Profile snapshot (enhanced with skills)
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-const FAKE_OPPS: readonly FakeOpportunity[] = [
-  {
-    id: "o1",
-    company: "Halcyon Labs",
-    title: "Senior Backend Engineer · Payments",
-    location: "Remote · EU",
-    stack: ["TypeScript", "Postgres", "AWS"],
-    compensation: "€110–140k",
-    matchScore: 94,
-  },
-  {
-    id: "o2",
-    company: "Meridian AI",
-    title: "Staff ML Engineer · Evaluation",
-    location: "London, UK · Hybrid",
-    stack: ["Python", "PyTorch", "Ray"],
-    compensation: "£140–180k",
-    matchScore: 89,
-  },
-  {
-    id: "o3",
-    company: "Sable",
-    title: "Full-stack Engineer · 0→1 product",
-    location: "Berlin · On-site",
-    stack: ["Next.js", "Supabase", "Tailwind"],
-    compensation: "€95–120k",
-    matchScore: 86,
-    locked: true,
-  },
-] as const;
-
-function OpportunitiesCard({
-  displayName,
-  headline,
-}: {
-  displayName: string;
-  headline: string;
-}) {
-  return (
-    <section className="rounded-2xl border border-edge bg-surface p-5 transition-all duration-300 hover:border-accent/25 hover:shadow-[0_24px_60px_-42px_rgba(10,46,26,0.3)] sm:p-6">
-      <header className="mb-5 flex items-center justify-between gap-3">
-        <div className="min-w-0">
-          <p className="text-[11px] uppercase tracking-[0.08em] text-accent font-jetbrains">
-            Top matches for you
-          </p>
-          <h2 className="mt-1 truncate text-lg font-bold text-heading font-raleway">
-            Hand-picked for {displayName.split(" ")[0]}
-          </h2>
-          <p className="mt-0.5 truncate text-xs text-body font-raleway">
-            Based on {headline.toLowerCase()} and your declared skills.
-          </p>
-        </div>
-        <Link
-          href="/talent/jobs"
-          className="shrink-0 text-[11px] uppercase tracking-[0.08em] text-accent transition-opacity hover:opacity-80 font-jetbrains"
-        >
-          View all
-        </Link>
-      </header>
-
-      <div className="space-y-3">
-        {FAKE_OPPS.map((o) =>
-          o.locked ? (
-            <LockedOpportunityRow key={o.id} opp={o} />
-          ) : (
-            <OpportunityRow key={o.id} opp={o} />
-          )
-        )}
-      </div>
-    </section>
-  );
-}
-
-function OpportunityRow({ opp }: { opp: FakeOpportunity }) {
-  return (
-    <article className="group flex flex-col gap-3 rounded-xl border border-edge bg-page-alt p-4 transition-all hover:border-accent/40 sm:flex-row sm:items-center sm:gap-5">
-      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-surface text-accent">
-        <Building2 className="h-5 w-5" />
-      </div>
-      <div className="min-w-0 flex-1">
-        <div className="flex flex-wrap items-center gap-2">
-          <p className="truncate text-sm font-semibold text-heading font-raleway">
-            {opp.title}
-          </p>
-          <span className="inline-flex items-center gap-1 rounded-full border border-accent/30 bg-accent/5 px-2 py-0.5 text-[10px] uppercase tracking-[0.08em] text-accent font-jetbrains">
-            <Star className="h-3 w-3" />
-            {opp.matchScore}% match
-          </span>
-        </div>
-        <p className="mt-0.5 truncate text-xs text-body font-raleway">
-          {opp.company} · {opp.location} · {opp.compensation}
-        </p>
-        <div className="mt-2 flex flex-wrap gap-1.5">
-          {opp.stack.map((s) => (
-            <span
-              key={s}
-              className="rounded-full bg-pill-bg px-2 py-0.5 text-[10px] font-medium text-pill-text font-raleway"
-            >
-              {s}
-            </span>
-          ))}
-        </div>
-      </div>
-      <div className="flex items-center gap-2 sm:flex-col sm:items-end">
-        <button
-          type="button"
-          disabled
-          className="inline-flex items-center gap-1.5 rounded-lg border border-edge bg-surface px-3 py-1.5 text-[11px] font-semibold text-heading transition-opacity hover:opacity-80 disabled:opacity-70 font-raleway"
-        >
-          <Bookmark className="h-3 w-3" />
-          Save
-        </button>
-        <Link
-          href="/talent/jobs"
-          className="inline-flex items-center gap-1.5 rounded-lg bg-accent px-3 py-1.5 text-[11px] font-semibold text-white transition-all hover:opacity-90 hover:shadow-[0_12px_30px_-18px_rgba(74,222,128,0.45)] font-raleway"
-        >
-          View role
-          <ArrowUpRight className="h-3 w-3" />
-        </Link>
-      </div>
-    </article>
-  );
-}
-
-function LockedOpportunityRow({ opp }: { opp: FakeOpportunity }) {
-  return (
-    <article className="relative overflow-hidden rounded-xl border border-dashed border-edge bg-page-alt p-4">
-      <div className="pointer-events-none select-none blur-[3px]">
-        <div className="flex items-center gap-4">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-surface text-accent">
-            <Building2 className="h-5 w-5" />
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-semibold text-heading font-raleway">
-              {opp.title}
-            </p>
-            <p className="mt-0.5 truncate text-xs text-body font-raleway">
-              {opp.company} · {opp.location} · {opp.compensation}
-            </p>
-          </div>
-        </div>
-      </div>
-      <div className="absolute inset-0 flex items-center justify-center gap-3 bg-surface/60 px-4 backdrop-blur-[2px]">
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-accent/15 text-accent">
-          <Lock className="h-4 w-4" />
-        </div>
-        <div className="min-w-0">
-          <p className="text-sm font-semibold text-heading font-raleway">
-            Finish your profile to unlock more matches
-          </p>
-          <p className="mt-0.5 text-[11px] text-body font-raleway">
-            Add at least one portfolio link and a resume.
-          </p>
-        </div>
-      </div>
-    </article>
-  );
-}
-
-function RecentActivity() {
-  return (
-    <section className="rounded-2xl border border-edge bg-surface p-5 transition-all duration-300 hover:border-accent/25 hover:shadow-[0_24px_60px_-42px_rgba(10,46,26,0.3)] sm:p-6">
-      <header className="mb-4">
-        <p className="text-[11px] uppercase tracking-[0.08em] text-accent font-jetbrains">
-          Recent activity
-        </p>
-        <h2 className="mt-1 text-lg font-bold text-heading font-raleway">
-          What&apos;s been happening
-        </h2>
-      </header>
-
-      <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-edge bg-page-alt px-6 py-10 text-center">
-        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-pill-bg text-accent">
-          <LineChart className="h-5 w-5" />
-        </div>
-        <div>
-          <p className="text-sm font-semibold text-heading font-raleway">
-            Activity will appear here
-          </p>
-          <p className="mt-1 max-w-sm text-xs text-body font-raleway">
-            As companies view your profile, save you, or reach out,
-            you&apos;ll see it all here in one feed.
-          </p>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function ProfileSnapshot({
-  name,
-  headline,
-  location,
-  completeness,
-}: {
-  name: string;
-  headline: string;
-  location: string;
-  completeness: number;
-}) {
+function ProfileSnapshot({ name, headline, location, completeness, skills }: { name: string; headline: string; location: string; completeness: number; skills: string[] }) {
   const initials = (() => {
     const parts = name.trim().split(/\s+/);
     if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
@@ -864,197 +775,57 @@ function ProfileSnapshot({
   })();
 
   return (
-    <section className="rounded-2xl border border-edge bg-surface p-5 transition-all duration-300 hover:border-accent/25 hover:shadow-[0_24px_60px_-42px_rgba(10,46,26,0.3)]">
-      <p className="text-[11px] uppercase tracking-[0.08em] text-subtle font-jetbrains">
-        Your public profile
-      </p>
-      <div className="mt-4 flex items-center gap-3">
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-pill-bg text-sm font-bold text-accent font-jetbrains">
+    <section className="relative overflow-hidden rounded-xl border border-edge bg-surface p-4 transition-all duration-300 hover:border-accent/25 hover:shadow-[0_24px_60px_-42px_rgba(10,46,26,0.3)] sm:rounded-2xl sm:p-5">
+      {/* Glass shimmer */}
+      <span aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden rounded-xl sm:rounded-2xl">
+        <span className="velora-glass-shimmer absolute inset-y-0 left-0 w-1/3 bg-gradient-to-r from-transparent via-white/[0.05] to-transparent" />
+      </span>
+
+      <p className="relative text-[10px] uppercase tracking-[0.06em] text-subtle font-jetbrains sm:text-[11px] sm:tracking-[0.08em]">Your public profile</p>
+
+      <div className="relative mt-3 flex items-center gap-2.5 sm:mt-4 sm:gap-3">
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-pill-bg text-sm font-bold text-accent font-jetbrains sm:h-12 sm:w-12">
           {initials}
         </div>
         <div className="min-w-0">
-          <p className="truncate text-sm font-semibold text-heading font-raleway">
-            {name}
-          </p>
-          <p className="truncate text-xs text-body font-raleway">{headline}</p>
+          <p className="truncate text-[13px] font-semibold text-heading font-raleway sm:text-sm">{name}</p>
+          <p className="truncate text-[11px] text-body font-raleway sm:text-xs">{headline}</p>
         </div>
       </div>
 
-      <div className="mt-4 flex flex-wrap items-center gap-2 text-xs text-body font-jetbrains">
-        <span className="inline-flex items-center gap-1.5">
-          <MapPin className="h-3 w-3 text-accent" />
-          {location}
-        </span>
+      <div className="relative mt-3 flex flex-wrap items-center gap-2 text-[11px] text-body font-jetbrains sm:mt-4 sm:text-xs">
+        <span className="inline-flex items-center gap-1.5"><MapPin className="h-3 w-3 text-accent" />{location}</span>
       </div>
 
+      {/* Top skills */}
+      {skills.length > 0 && (
+        <div className="relative mt-2.5 flex flex-wrap gap-1.5 sm:mt-3">
+          {skills.slice(0, 4).map((s) => (
+            <span key={s} className="rounded-full bg-pill-bg px-2 py-0.5 text-[9px] font-medium text-pill-text font-raleway sm:text-[10px]">{s}</span>
+          ))}
+        </div>
+      )}
+
       {/* Completeness meter */}
-      <div className="mt-5">
-        <div className="flex items-center justify-between text-[11px] text-subtle font-jetbrains">
+      <div className="relative mt-4 sm:mt-5">
+        <div className="flex items-center justify-between text-[10px] text-subtle font-jetbrains sm:text-[11px]">
           <span>Profile completeness</span>
           <span className="text-accent">{completeness}%</span>
         </div>
         <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-edge">
-          <div
-            className="h-full rounded-full bg-accent transition-all"
-            style={{ width: `${completeness}%` }}
-          />
+          <div className="h-full rounded-full bg-accent transition-all" style={{ width: `${completeness}%` }} />
         </div>
         {completeness < 100 && (
-          <p className="mt-2 text-[11px] text-body font-raleway">
+          <p className="mt-2 text-[10px] leading-relaxed text-body font-raleway sm:text-[11px]">
             Complete your profile to rank higher in company searches.
           </p>
         )}
       </div>
 
-      <button
-        type="button"
-        disabled
-        className="mt-5 inline-flex w-full items-center justify-center gap-1.5 rounded-lg border border-edge bg-page-alt px-4 py-2 text-xs font-semibold text-heading transition-opacity hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-60 font-raleway"
-      >
-        <Pencil className="h-3.5 w-3.5" />
-        Edit profile
-      </button>
-    </section>
-  );
-}
-
-function AvailabilityCard() {
-  return (
-    <section className="rounded-2xl border border-edge bg-surface p-5 transition-all duration-300 hover:border-accent/25 hover:shadow-[0_24px_60px_-42px_rgba(10,46,26,0.3)]">
-      <p className="text-[11px] uppercase tracking-[0.08em] text-subtle font-jetbrains">
-        Availability
-      </p>
-      <p className="mt-2 text-sm font-semibold text-heading font-raleway">
-        Open to offers
-      </p>
-      <p className="mt-1 text-xs text-body font-raleway">
-        You&apos;ll appear in company searches and can receive inbound
-        messages.
-      </p>
-
-      <div className="mt-4 divide-y divide-edge overflow-hidden rounded-xl border border-edge">
-        <AvailabilityRow
-          label="Open to offers"
-          sub="Visible, receive messages"
-          active
-        />
-        <AvailabilityRow
-          label="Only top matches"
-          sub="Hidden from broad search"
-        />
-        <AvailabilityRow
-          label="Taking a break"
-          sub="Profile paused for 30 days"
-        />
-      </div>
-    </section>
-  );
-}
-
-function AvailabilityRow({
-  label,
-  sub,
-  active = false,
-}: {
-  label: string;
-  sub: string;
-  active?: boolean;
-}) {
-  return (
-    <button
-      type="button"
-      disabled
-      className={`flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition-colors ${
-        active
-          ? "bg-accent/5"
-          : "bg-surface hover:bg-page-alt/50"
-      } disabled:cursor-not-allowed`}
-    >
-      <span>
-        <span className="block text-sm font-semibold text-heading font-raleway">
-          {label}
-        </span>
-        <span className="block text-[11px] text-subtle font-jetbrains">
-          {sub}
-        </span>
-      </span>
-      <span
-        className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${
-          active
-            ? "border-accent bg-accent text-white"
-            : "border-edge bg-surface"
-        }`}
-        aria-hidden
-      >
-        {active && <CheckCircle2 className="h-3 w-3" />}
-      </span>
-    </button>
-  );
-}
-
-function QuickActions() {
-  return (
-    <section className="rounded-2xl border border-edge bg-surface p-5 transition-all duration-300 hover:border-accent/25 hover:shadow-[0_24px_60px_-42px_rgba(10,46,26,0.3)]">
-      <p className="text-[11px] uppercase tracking-[0.08em] text-subtle font-jetbrains">
-        Quick actions
-      </p>
-      <ul className="mt-3 space-y-2">
-        <QuickActionItem
-          href="/talent/jobs"
-          icon={Briefcase}
-          label="Browse available jobs"
-        />
-        <QuickActionItem
-          href="/talent/invites"
-          icon={Users}
-          label="Open invites"
-        />
-        <QuickActionItem
-          href="/talent/messages"
-          icon={MessageSquare}
-          label="Messages inbox"
-        />
-        <QuickActionItem
-          href="/talent/notifications"
-          icon={Bell}
-          label="Notification center"
-        />
-        <QuickActionItem
-          href="/profile"
-          icon={FileText}
-          label="Profile and role"
-        />
-        <QuickActionItem
-          href="/talent/settings"
-          icon={Settings}
-          label="Account settings"
-        />
-      </ul>
-    </section>
-  );
-}
-
-function QuickActionItem({
-  href,
-  icon: Icon,
-  label,
-}: {
-  href: string;
-  icon: React.ComponentType<{ className?: string }>;
-  label: string;
-}) {
-  return (
-    <li>
-      <Link
-        href={href}
-        className="group flex w-full items-center gap-3 rounded-lg border border-transparent px-3 py-2 text-left text-sm text-body transition-all hover:border-edge hover:bg-page-alt hover:text-heading hover:shadow-[0_12px_28px_-22px_rgba(10,46,26,0.3)] font-raleway"
-      >
-        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-pill-bg text-accent">
-          <Icon className="h-3.5 w-3.5" />
-        </span>
-        <span className="flex-1">{label}</span>
-        <ArrowRight className="h-3.5 w-3.5 text-subtle transition-transform group-hover:translate-x-0.5 group-hover:text-accent" />
+      <Link href="/talent/profile" className="relative mt-4 inline-flex w-full items-center justify-center gap-1.5 rounded-lg border border-edge bg-page-alt px-3 py-2 text-[11px] font-semibold text-heading transition-all hover:border-accent/30 hover:text-accent font-raleway sm:mt-5 sm:px-4 sm:text-xs">
+        <Pencil className="h-3 w-3 sm:h-3.5 sm:w-3.5" />Edit profile
       </Link>
-    </li>
+    </section>
   );
 }
+

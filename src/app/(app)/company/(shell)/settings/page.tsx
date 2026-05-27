@@ -1,24 +1,22 @@
+import Link from "next/link";
 import {
   AlertTriangle,
+  ArrowRight,
   Bell,
-  Building2,
   ExternalLink,
   Globe,
-  ImageIcon,
   KeyRound,
   Shield,
   Trash2,
+  UserSquare2,
   Users2,
 } from "lucide-react";
 import { requireCompany } from "@/lib/company/guard";
 import {
-  COMPANY_SIZES,
-  COMPANY_STAGES,
   HIRING_URGENCIES,
   HIRING_VOLUMES,
   INDUSTRIES,
   SALARY_RANGES,
-  WORK_STYLES,
   labelFor,
 } from "@/lib/company/options";
 
@@ -33,59 +31,37 @@ export default async function CompanySettingsPage() {
           Settings
         </span>
         <h1 className="text-3xl font-bold text-heading font-raleway">
-          Company settings
+          Account &amp; preferences
         </h1>
         <p className="mt-2 max-w-xl text-sm text-body font-raleway">
-          Manage your company profile, hiring preferences, team seats and
-          account controls.
+          Hiring preferences, notifications, security and other account
+          controls. Looking for your company info? That now lives on its
+          own page.
         </p>
       </div>
 
-      {/* Company profile */}
-      <SettingsCard
-        icon={Building2}
-        title="Company profile"
-        description="Shown on your job posts and visible to matched candidates."
+      {/* Profile shortcut banner */}
+      <Link
+        href="/company/profile"
+        className="group mt-6 flex items-center gap-4 rounded-2xl border border-edge bg-surface p-4 transition-all hover:border-accent/40 hover:shadow-[0_10px_30px_-15px_rgba(74,222,128,0.35)] sm:p-5"
       >
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
-          <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-xl border border-dashed border-edge bg-page-alt">
-            <ImageIcon className="h-6 w-6 text-subtle" aria-hidden />
-          </div>
-          <div className="flex-1 space-y-4">
-            <ReadonlyField
-              label="Legal name"
-              value={application?.legal_name ?? "—"}
-            />
-            <ReadonlyField
-              label="Website"
-              value={application?.website_url ?? "—"}
-              isLink
-            />
-            <div className="grid gap-4 sm:grid-cols-2">
-              <ReadonlyField
-                label="Size"
-                value={labelFor(COMPANY_SIZES, application?.company_size)}
-              />
-              <ReadonlyField
-                label="Stage"
-                value={labelFor(COMPANY_STAGES, application?.company_stage)}
-              />
-              <ReadonlyField
-                label="HQ"
-                value={application?.hq_country ?? "—"}
-              />
-              <ReadonlyField
-                label="Work style"
-                value={labelFor(WORK_STYLES, application?.work_style)}
-              />
-            </div>
-          </div>
+        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-accent/10 text-accent">
+          <UserSquare2 className="h-5 w-5" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-semibold text-heading font-raleway">
+            Manage your company profile
+          </p>
+          <p className="mt-0.5 truncate text-xs text-body font-raleway">
+            Logo, name, links, industries and more — visible to matched
+            candidates.
+          </p>
         </div>
-        <FooterAction
-          hint="To edit, contact your Veloraa onboarding manager."
-          actionLabel="Edit profile"
-        />
-      </SettingsCard>
+        <span className="inline-flex items-center gap-1 text-xs font-semibold text-accent transition-transform group-hover:translate-x-0.5 font-raleway">
+          Open
+          <ArrowRight className="h-3.5 w-3.5" />
+        </span>
+      </Link>
 
       {/* Hiring preferences */}
       <SettingsCard

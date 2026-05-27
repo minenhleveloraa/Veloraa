@@ -4,6 +4,8 @@ import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import type { CompanyApplication } from "@/lib/types/db";
+import { getEffectivePlan } from "@/lib/billing/plans";
+import { QUOTAS } from "@/lib/billing/quotas";
 
 // ---------------------------------------------------------------------
 // Types
@@ -112,34 +114,25 @@ export async function submitJobForReview(
     };
   }
 
-  // 5. Quota check
-  const plan = application.selected_plan ?? "free";
-  const cardCollected = application.card_collected ?? false;
-  const isPaidWithCard = plan !== "free" && cardCollected;
+  // 5. Quota check using the canonical getEffectivePlan resolver.
+  const effective = getEffectivePlan(
+    application as unknown as Parameters<typeof getEffectivePlan>[0]
+  );
+  const cap = QUOTAS[effective.id].activeJobs;
 
-  if (!isPaidWithCard) {
-    // Free plan or paid-without-card: max 1 job (excluding rejected ones)
+  if (Number.isFinite(cap)) {
     const { count } = await supabase
       .from("company_jobs")
       .select("id", { count: "exact", head: true })
       .eq("company_id", user.id)
       .not("status", "eq", "rejected");
 
-    if ((count ?? 0) >= 1) {
-      if (plan === "free") {
-        return {
-          ok: false,
-          message:
-            "Free plan allows 1 job posting. Upgrade your plan to post more jobs.",
-        };
-      } else {
-        // Paid plan but no card
-        return {
-          ok: false,
-          message:
-            "Please add a payment method on the subscription page before posting additional jobs.",
-        };
-      }
+    if ((count ?? 0) >= cap) {
+      const message =
+        effective.id === "free"
+          ? "Free plan allows 1 active job posting. Upgrade your plan to post more jobs."
+          : "Your subscription is not active. Please complete checkout on the subscription page before posting more jobs.";
+      return { ok: false, message };
     }
   }
 

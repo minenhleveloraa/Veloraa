@@ -7,10 +7,14 @@ import { createClient } from "@/lib/supabase/client";
 // Types
 // ---------------------------------------------------------------------------
 
-export type PostgresChange<T extends Record<string, unknown> = Record<string, unknown>> =
+// supabase-js types accept a record of columns. We loosen this to `any`-ish
+// records so consumers can pass concrete row types without constraint friction.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type PostgresChange<T extends { [key: string]: any } = { [key: string]: any }> =
   RealtimePostgresChangesPayload<T>;
 
-export type ChangeHandler<T extends Record<string, unknown> = Record<string, unknown>> = (
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type ChangeHandler<T extends { [key: string]: any } = { [key: string]: any }> = (
   payload: PostgresChange<T>
 ) => void;
 

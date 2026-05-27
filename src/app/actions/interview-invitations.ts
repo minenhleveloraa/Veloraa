@@ -100,7 +100,7 @@ export async function sendInterviewInvite(
   }
 
   // Insert the invitation
-  const { error: invErr } = await admin
+  const { data: invRow, error: invErr } = await admin
     .from("interview_invitations")
     .insert({
       job_id: parsed.data.job_id,
@@ -110,16 +110,20 @@ export async function sendInterviewInvite(
       message: parsed.data.message || null,
       status: "pending",
       thread_id: threadId,
-    });
+    })
+    .select("id")
+    .single();
 
-  if (invErr) {
-    return { ok: false, message: invErr.message };
+  if (invErr || !invRow) {
+    return { ok: false, message: invErr?.message ?? "Failed to create invitation." };
   }
 
   // Insert a system message with structured interview card data
   const now = new Date().toISOString();
   const cardBody = JSON.stringify({
     type: "interview_invite",
+    invitation_id: invRow.id,
+    job_id: parsed.data.job_id,
     job_title: job.title,
     proposed_dates: parsed.data.proposed_dates,
     message: parsed.data.message || null,

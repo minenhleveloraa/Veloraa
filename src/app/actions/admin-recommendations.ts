@@ -131,6 +131,7 @@ export async function addRecommendation(
 
   revalidatePath("/admin");
   revalidatePath("/company/jobs");
+  revalidatePath("/company/dashboard");
   return { ok: true };
 }
 
@@ -155,5 +156,6 @@ export async function removeRecommendation(
 
   revalidatePath("/admin");
   revalidatePath("/company/jobs");
+  revalidatePath("/company/dashboard");
   return { ok: true };
 }

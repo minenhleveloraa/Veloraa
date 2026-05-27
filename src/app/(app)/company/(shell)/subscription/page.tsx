@@ -13,7 +13,12 @@ import {
 } from "lucide-react";
 import { requireApprovedCompany } from "@/lib/company/guard";
 import { createClient } from "@/lib/supabase/server";
-import { BILLING_PLANS, type PlanId, type Currency } from "@/lib/billing/plans";
+import {
+  BILLING_PLANS,
+  getEffectivePlan,
+  type PlanId,
+  type Currency,
+} from "@/lib/billing/plans";
 import { SubscriptionActions } from "@/components/billing/SubscriptionActions";
 import LiveSubscriptionStatus from "@/components/realtime/LiveSubscriptionStatus";
 
@@ -23,8 +28,22 @@ const PLAN_ICONS: Record<string, React.ReactNode> = {
   scale: <Rocket className="h-5 w-5" />,
 };
 
+interface InvoiceRow {
+  id: string;
+  number: string | null;
+  provider: "paddle" | "payfast";
+  status: "paid" | "refunded" | "void";
+  amount_cents: number;
+  currency: Currency;
+  plan_id: "growth" | "scale";
+  interval: "monthly" | "annual";
+  period_start: string | null;
+  period_end: string | null;
+  emitted_at: string;
+}
+
 export default async function CompanySubscriptionPage() {
-  const { application } = await requireApprovedCompany();
+  await requireApprovedCompany();
   const supabase = await createClient();
   const {
     data: { user },
@@ -33,17 +52,20 @@ export default async function CompanySubscriptionPage() {
   const { data: employer } = await supabase
     .from("company_applications")
     .select(
-      "subscription_plan, subscription_status, subscription_interval, payment_provider, payment_currency, current_period_start, current_period_end, has_used_free_post, paddle_customer_id, payfast_token"
+      "subscription_plan, subscription_status, subscription_interval, payment_provider, payment_currency, subscription_currency, current_period_start, current_period_end, has_used_free_post, paddle_customer_id, payfast_token"
     )
     .eq("user_id", user!.id)
     .single();
 
-  const currentPlanId = (employer?.subscription_plan ?? application?.selected_plan ?? "free") as PlanId;
+  const effective = getEffectivePlan(employer);
+  const currentPlanId = effective.id as PlanId;
   const currentPlan = BILLING_PLANS.find((p) => p.id === currentPlanId)!;
-  const status = (employer?.subscription_status ?? "free") as string;
+  const status = effective.status;
   const interval = (employer?.subscription_interval ?? "monthly") as "monthly" | "annual";
   const provider = (employer?.payment_provider ?? "paddle") as "paddle" | "payfast";
-  const currency = (employer?.payment_currency ?? "USD") as Currency;
+  const currency = (employer?.subscription_currency ??
+    employer?.payment_currency ??
+    "USD") as Currency;
   const periodEnd = employer?.current_period_end;
   const symbol = currency === "ZAR" ? "R" : "$";
 
@@ -59,10 +81,21 @@ export default async function CompanySubscriptionPage() {
     free: { text: "Free", color: "bg-subtle/10 text-subtle" },
     active: { text: "Active", color: "bg-accent/10 text-accent" },
     paused: { text: "Paused", color: "bg-amber-500/10 text-amber-600" },
-    cancelled: { text: "Cancelled", color: "bg-red-500/10 text-red-500" },
-    past_due: { text: "Past Due", color: "bg-red-500/10 text-red-500" },
+    cancelled: { text: "Cancels on renewal", color: "bg-amber-500/10 text-amber-600" },
+    past_due: { text: "Payment failed", color: "bg-red-500/10 text-red-500" },
+    pending: { text: "Awaiting first payment", color: "bg-amber-500/10 text-amber-600" },
   };
   const badge = statusLabel[status] ?? statusLabel.free;
+
+  // Fetch real invoices for the table at the bottom of the page.
+  const { data: invoiceRows } = await supabase
+    .from("invoices")
+    .select(
+      "id, number, provider, status, amount_cents, currency, plan_id, interval, period_start, period_end, emitted_at"
+    )
+    .order("emitted_at", { ascending: false })
+    .limit(24);
+  const invoices = (invoiceRows ?? []) as InvoiceRow[];
 
   return (
     <LiveSubscriptionStatus>
@@ -308,23 +341,62 @@ export default async function CompanySubscriptionPage() {
               Invoices
             </h3>
           </div>
-          <div className="rounded-xl border border-dashed border-edge bg-page-alt p-4 text-center">
-            <p className="text-sm font-semibold text-heading font-raleway">
-              No invoices yet
-            </p>
-            <p className="mt-1 text-xs text-body font-raleway">
-              Receipts will appear here after your first charge. Downloadable
-              as PDF.
-            </p>
-            <button
-              type="button"
-              disabled
-              className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-edge bg-surface px-4 py-2 text-[11px] font-semibold text-heading transition-opacity hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-60 font-raleway"
-            >
-              <Download className="h-3 w-3" />
-              Download all
-            </button>
-          </div>
+          {invoices.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-edge bg-page-alt p-4 text-center">
+              <p className="text-sm font-semibold text-heading font-raleway">
+                No invoices yet
+              </p>
+              <p className="mt-1 text-xs text-body font-raleway">
+                Receipts will appear here after your first charge. Downloadable
+                as PDF.
+              </p>
+            </div>
+          ) : (
+            <ul className="divide-y divide-edge rounded-xl border border-edge bg-page-alt">
+              {invoices.map((inv) => {
+                const major = (inv.amount_cents / 100).toLocaleString(
+                  inv.currency === "ZAR" ? "en-ZA" : "en-US",
+                  { minimumFractionDigits: 2, maximumFractionDigits: 2 }
+                );
+                const sym = inv.currency === "ZAR" ? "R" : "$";
+                return (
+                  <li
+                    key={inv.id}
+                    className="flex items-center justify-between gap-3 px-4 py-3"
+                  >
+                    <div className="min-w-0">
+                      <p className="truncate text-xs font-semibold text-heading font-jetbrains">
+                        {inv.number ?? "—"}
+                      </p>
+                      <p className="text-[11px] text-subtle font-raleway">
+                        {new Date(inv.emitted_at).toLocaleDateString(undefined, {
+                          year: "numeric",
+                          month: "short",
+                          day: "numeric",
+                        })}{" "}
+                        · {inv.plan_id} ({inv.interval})
+                      </p>
+                    </div>
+                    <div className="flex shrink-0 items-center gap-3">
+                      <span className="text-xs font-semibold text-heading font-raleway">
+                        {sym}
+                        {major}
+                      </span>
+                      <a
+                        href={`/api/billing/receipts/${inv.id}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 rounded-md border border-edge bg-surface px-2.5 py-1 text-[11px] font-semibold text-heading transition-opacity hover:opacity-80 font-raleway"
+                      >
+                        <Download className="h-3 w-3" />
+                        PDF
+                      </a>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
         </div>
       </section>
 

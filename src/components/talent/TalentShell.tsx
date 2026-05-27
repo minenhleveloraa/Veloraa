@@ -35,7 +35,6 @@ const TOP_NAV: readonly NavItem[] = [
   { href: "/talent/jobs", label: "Jobs", icon: Briefcase },
   { href: "/talent/invites", label: "Invites", icon: Send },
   { href: "/talent/messages", label: "Messages", icon: MessageSquare },
-  { href: "/talent/notifications", label: "Notifications", icon: BellDot },
   { href: "/talent/settings", label: "Settings", icon: Settings },
 ] as const;
 
@@ -396,7 +395,7 @@ function AvatarMenu({
 
             <div className="grid grid-cols-2 gap-1.5 p-1.5">
               <MenuItem
-                href="/profile"
+                href="/talent/profile"
                 icon={User}
                 label="Profile"
                 onSelect={() => setOpen(false)}
@@ -696,10 +695,10 @@ function TalentMoreSheet({
 
             <div className="grid grid-cols-2 gap-2 px-5">
               <SheetTile
-                href="/profile"
+                href="/talent/profile"
                 icon={User}
                 label="Profile"
-                sub="Role and account"
+                sub="Edit your talent profile"
                 onSelect={onClose}
               />
               <SheetTile

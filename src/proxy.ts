@@ -19,20 +19,23 @@ function isAllowlistedAdmin(email: string | null | undefined): boolean {
 export async function proxy(request: NextRequest) {
   const { response, user } = await updateSession(request);
 
-  // ─── Geo-based currency detection ───
-  // Vercel injects x-vercel-ip-country header automatically.
-  // We set a cookie so the pricing page can auto-select ZAR for South Africa.
-  if (!request.cookies.has("v_currency")) {
-    const country =
-      request.headers.get("x-vercel-ip-country") || "";
-
+  // ─── Geo-based currency + country detection ───
+  // Vercel injects x-vercel-ip-country header automatically. We persist
+  // both `v_currency` (UI display) and `v_country` (provider routing in
+  // checkout APIs). Both are technically necessary for the billing UX,
+  // sameSite=lax, no PII.
+  if (!request.cookies.has("v_currency") || !request.cookies.has("v_country")) {
+    const country = (request.headers.get("x-vercel-ip-country") ?? "").toUpperCase();
     const currency = country === "ZA" ? "ZAR" : "USD";
 
-    response.cookies.set("v_currency", currency, {
+    const opts = {
       path: "/",
-      maxAge: 60 * 60 * 24 * 30, // 30 days
-      sameSite: "lax",
-    });
+      maxAge: 60 * 60 * 24 * 90, // 90 days
+      sameSite: "lax" as const,
+    };
+
+    response.cookies.set("v_currency", currency, opts);
+    response.cookies.set("v_country", country || "US", opts);
   }
 
   // Early-gate /admin/* — the layout enforces this too, but stopping

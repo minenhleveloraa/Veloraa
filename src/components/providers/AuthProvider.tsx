@@ -80,25 +80,40 @@ export default function AuthProvider({
   useEffect(() => {
     let mounted = true;
 
-    (async () => {
-      const { data } = await supabase.auth.getSession();
-      if (!mounted) return;
-      setSession(data.session);
-      setUser(data.session?.user ?? null);
-      if (data.session?.user) {
-        const p = await fetchProfile(data.session.user.id);
-        if (mounted) setProfile(p);
-      }
-      if (mounted) setLoading(false);
-    })();
+    // We already receive initialUser / initialProfile from the server-side
+    // layout, so we do NOT call supabase.auth.getSession() here. Doing so
+    // would race with onAuthStateChange's INITIAL_SESSION event for the same
+    // internal auth-token lock — causing the "Lock was released because
+    // another request stole it" errors, especially under React Strict Mode's
+    // double-mount.
 
     const { data: sub } = supabase.auth.onAuthStateChange(
-      async (_event, nextSession) => {
+      async (event, nextSession) => {
+        if (!mounted) return;
+
+        // INITIAL_SESSION fires synchronously on registration.
+        // We already have the initial state from props — skip the profile
+        // fetch to avoid redundant work and potential lock contention.
+        if (event === "INITIAL_SESSION") {
+          setSession(nextSession);
+          // If we had no initial user from the server but the client has a
+          // session (e.g. cookie-based restore), hydrate now.
+          if (!initialUser && nextSession?.user) {
+            setUser(nextSession.user);
+            const p = await fetchProfile(nextSession.user.id);
+            if (mounted) setProfile(p);
+          }
+          setLoading(false);
+          return;
+        }
+
+        // For all other events (SIGNED_IN, TOKEN_REFRESHED, USER_UPDATED,
+        // SIGNED_OUT), update state and refetch profile.
         setSession(nextSession);
         setUser(nextSession?.user ?? null);
         if (nextSession?.user) {
           const p = await fetchProfile(nextSession.user.id);
-          setProfile(p);
+          if (mounted) setProfile(p);
         } else {
           setProfile(null);
         }
@@ -109,7 +124,10 @@ export default function AuthProvider({
       mounted = false;
       sub.subscription.unsubscribe();
     };
-  }, [supabase, fetchProfile]);
+    // fetchProfile is stable (depends only on supabase singleton).
+    // initialUser is a prop that doesn't change after mount.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [supabase]);
 
   const signOut = useCallback(async () => {
     await supabase.auth.signOut();

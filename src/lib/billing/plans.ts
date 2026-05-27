@@ -76,16 +76,16 @@ export const BILLING_PLANS: PlanDefinition[] = [
       "For actively hiring teams that need full access to vetted talent.",
     badge: "Most Popular",
     usd: {
-      monthly: 199,
-      annual: 1990,
-      monthlyEquivalent: 166,
-      savings: 398,
+      monthly: 49,
+      annual: 490,
+      monthlyEquivalent: 41,
+      savings: 98,
     },
     zar: {
-      monthly: 3699,
-      annual: 36990,
-      monthlyEquivalent: 3083,
-      savings: 7398,
+      monthly: 799,
+      annual: 7990,
+      monthlyEquivalent: 666,
+      savings: 1598,
     },
     features: [
       { text: "Unlimited job posts", included: true },
@@ -126,16 +126,16 @@ export const BILLING_PLANS: PlanDefinition[] = [
       "For high-volume hiring teams that need priority access and advanced tools.",
     badge: "Best Value",
     usd: {
-      monthly: 399,
-      annual: 3990,
-      monthlyEquivalent: 333,
-      savings: 798,
+      monthly: 119,
+      annual: 1190,
+      monthlyEquivalent: 99,
+      savings: 238,
     },
     zar: {
-      monthly: 7399,
-      annual: 73990,
-      monthlyEquivalent: 6166,
-      savings: 14798,
+      monthly: 1999,
+      annual: 19990,
+      monthlyEquivalent: 1666,
+      savings: 3998,
     },
     features: [
       { text: "Everything in Growth", included: true },
@@ -173,6 +173,80 @@ export const BILLING_PLANS: PlanDefinition[] = [
 
 export function getPlan(id: PlanId): PlanDefinition {
   return BILLING_PLANS.find((p) => p.id === id)!;
+}
+
+// ---------------------------------------------------------------------
+// Effective plan resolver — single source of truth used by `gate.ts`,
+// the company candidate-access helper, and any UI that needs to know
+// what features the user actually has access to right now.
+// ---------------------------------------------------------------------
+
+export type SubscriptionStatus =
+  | "free"
+  | "active"
+  | "past_due"
+  | "paused"
+  | "cancelled"
+  | "pending";
+
+export interface EffectivePlan {
+  id: PlanId;
+  status: SubscriptionStatus;
+  /** True if backed by an active paid subscription (or grace period). */
+  fromBilling: boolean;
+}
+
+interface PlanResolverInput {
+  subscription_plan?: string | null;
+  subscription_status?: string | null;
+  current_period_end?: string | null;
+  selected_plan?: string | null;
+}
+
+function isPlanId(value: string | null | undefined): value is PlanId {
+  return value === "free" || value === "growth" || value === "scale";
+}
+
+export function getEffectivePlan(
+  app: PlanResolverInput | null | undefined
+): EffectivePlan {
+  const status = (app?.subscription_status ?? "free") as SubscriptionStatus;
+  const planFromBilling = isPlanId(app?.subscription_plan)
+    ? app.subscription_plan
+    : undefined;
+
+  // Active or past_due: paid feature access.
+  if (status === "active" || status === "past_due") {
+    return {
+      id: planFromBilling ?? "free",
+      status,
+      fromBilling: true,
+    };
+  }
+
+  // Cancelled but inside the paid period — keep paid access until
+  // current_period_end, then drop to free.
+  if (status === "cancelled") {
+    const periodEnd = app?.current_period_end
+      ? new Date(app.current_period_end)
+      : null;
+    const inGracePeriod = periodEnd && periodEnd.getTime() > Date.now();
+    return inGracePeriod
+      ? {
+          id: planFromBilling ?? "free",
+          status: "cancelled",
+          fromBilling: true,
+        }
+      : { id: "free", status: "free", fromBilling: false };
+  }
+
+  // Paused or pending: no paid feature access yet.
+  if (status === "paused" || status === "pending") {
+    return { id: "free", status, fromBilling: false };
+  }
+
+  // Free / unknown: default to free.
+  return { id: "free", status: "free", fromBilling: false };
 }
 
 export function formatPrice(

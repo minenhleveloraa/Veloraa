@@ -296,30 +296,73 @@ export default function CompanyWizard({
   // ------------------------------------------------------------
   // Render
   // ------------------------------------------------------------
-  const progressPct = ((step + 1) / STEPS.length) * 100;
   const currentStep = STEPS[step];
 
   return (
     <div className="mx-auto max-w-2xl px-4 pb-24 pt-6 sm:px-6 sm:pt-10 lg:px-8">
-      {/* Progress bar */}
-      <div className="mb-6">
-        <div className="flex items-center justify-between text-[11px] uppercase tracking-[0.08em] text-subtle font-jetbrains">
+      {/* Step indicator */}
+      <div className="mb-8">
+        <div className="mb-3 flex items-center justify-between text-[11px] uppercase tracking-[0.08em] text-subtle font-jetbrains">
           <span>
-            Step {currentStep.number} of 07
+            Step {step + 1} of {STEPS.length}
             {currentStep.optional && (
               <span className="ml-2 text-accent">· Optional</span>
             )}
           </span>
           <AutosaveIndicator isSaving={isSaving} savedAt={savedAt} />
         </div>
-        <div className="mt-2 h-1 overflow-hidden rounded-full bg-pill-bg">
-          <motion.div
-            className="h-full bg-accent"
-            initial={false}
-            animate={{ width: `${progressPct}%` }}
-            transition={{ duration: 0.4, ease: EASE_OUT }}
-          />
-        </div>
+
+        {/* Numbered circles + connecting lines */}
+        <ol className="flex items-center">
+          {STEPS.map((s, i) => {
+            const isDone = i < step;
+            const isCurrent = i === step;
+            const isLast = i === STEPS.length - 1;
+            return (
+              <li
+                key={s.id}
+                className="flex flex-1 items-center last:flex-none"
+                aria-current={isCurrent ? "step" : undefined}
+              >
+                <div className="relative flex h-7 w-7 shrink-0 items-center justify-center">
+                  {isCurrent && (
+                    <motion.span
+                      layoutId="wizard-current-ring"
+                      className="absolute inset-0 rounded-full ring-2 ring-accent ring-offset-2 ring-offset-page"
+                      transition={{ duration: 0.3, ease: EASE_OUT }}
+                      aria-hidden
+                    />
+                  )}
+                  <span
+                    className={`flex h-7 w-7 items-center justify-center rounded-full text-[11px] font-semibold transition-colors font-jetbrains ${
+                      isDone
+                        ? "bg-accent text-white"
+                        : isCurrent
+                        ? "bg-surface text-heading border border-accent"
+                        : "bg-pill-bg text-subtle"
+                    }`}
+                  >
+                    {isDone ? (
+                      <Check className="h-3.5 w-3.5" strokeWidth={2.5} />
+                    ) : (
+                      i + 1
+                    )}
+                  </span>
+                </div>
+                {!isLast && (
+                  <div className="relative mx-2 h-px flex-1 bg-pill-bg">
+                    <motion.div
+                      className="absolute inset-y-0 left-0 bg-accent"
+                      initial={false}
+                      animate={{ width: isDone ? "100%" : "0%" }}
+                      transition={{ duration: 0.4, ease: EASE_OUT }}
+                    />
+                  </div>
+                )}
+              </li>
+            );
+          })}
+        </ol>
       </div>
 
       {/* Step header */}

@@ -34,6 +34,12 @@ import type { Message, Thread, ThreadKind } from "./types";
 // Public props
 // ---------------------------------------------------------------------------
 
+/** Lightweight job descriptor used in the interview scheduler. */
+export interface CompanyJobOption {
+  id: string;
+  title: string;
+}
+
 export interface MessagingPanelProps {
   threads: Thread[];
   /** Label shown above thread list (e.g. "Messages"). */
@@ -60,6 +66,30 @@ export interface MessagingPanelProps {
   onSendMessage?: (threadId: string, body: string) => Promise<void> | void;
   /** Fires when a thread is opened — used by parent to mark-as-read. */
   onOpenThread?: (threadId: string) => void;
+
+  // ── Interview scheduling (company side) ──────────────────────────
+  /** Published jobs the company can schedule interviews for. */
+  companyJobs?: CompanyJobOption[];
+  /** Fire when the company submits an interview invitation from within the chat. */
+  onScheduleInterview?: (
+    threadId: string,
+    talentUserId: string,
+    data: { jobId: string; dates: string[]; message?: string }
+  ) => Promise<{ ok: boolean; message?: string }>;
+
+  // ── Interview response (talent side) ─────────────────────────────
+  /** "company" | "talent" — controls which interview card actions appear. */
+  viewerRole?: "company" | "talent";
+  /** Accept an interview invitation (talent picks one proposed date). */
+  onAcceptInterview?: (
+    invitationId: string,
+    selectedDate: string
+  ) => Promise<{ ok: boolean; message?: string }>;
+  /** Decline an interview invitation with an optional reason. */
+  onDeclineInterview?: (
+    invitationId: string,
+    reason?: string
+  ) => Promise<{ ok: boolean; message?: string }>;
 }
 
 // ---------------------------------------------------------------------------
@@ -176,6 +206,11 @@ export default function MessagingPanel({
   hideSearch = false,
   onSendMessage,
   onOpenThread,
+  companyJobs,
+  onScheduleInterview,
+  viewerRole,
+  onAcceptInterview,
+  onDeclineInterview,
 }: MessagingPanelProps) {
   const [selectedId, setSelectedId] = useState<string | null>(
     initialThreadId ?? null
@@ -303,6 +338,11 @@ export default function MessagingPanel({
             onSend={handleSend}
             showSchedule={scheduleKinds.includes(selected.kind)}
             showCall={callKinds.includes(selected.kind)}
+            companyJobs={companyJobs}
+            onScheduleInterview={onScheduleInterview}
+            viewerRole={viewerRole}
+            onAcceptInterview={onAcceptInterview}
+            onDeclineInterview={onDeclineInterview}
           />
         ) : (
           <EmptyThreadPane copy={emptyThreadCopy} />
@@ -467,6 +507,11 @@ function ThreadView({
   onSend,
   showSchedule,
   showCall,
+  companyJobs,
+  onScheduleInterview,
+  viewerRole,
+  onAcceptInterview,
+  onDeclineInterview,
 }: {
   thread: Thread;
   viewer: { name: string; initials: string };
@@ -474,6 +519,11 @@ function ThreadView({
   onSend: (body: string) => void;
   showSchedule: boolean;
   showCall: boolean;
+  companyJobs?: CompanyJobOption[];
+  onScheduleInterview?: MessagingPanelProps["onScheduleInterview"];
+  viewerRole?: "company" | "talent";
+  onAcceptInterview?: MessagingPanelProps["onAcceptInterview"];
+  onDeclineInterview?: MessagingPanelProps["onDeclineInterview"];
 }) {
   return (
     <>
@@ -483,11 +533,19 @@ function ThreadView({
         showSchedule={showSchedule}
         showCall={showCall}
       />
-      <MessageList thread={thread} viewerInitials={viewer.initials} />
+      <MessageList
+        thread={thread}
+        viewerInitials={viewer.initials}
+        viewerRole={viewerRole}
+        onAcceptInterview={onAcceptInterview}
+        onDeclineInterview={onDeclineInterview}
+      />
       <Composer
         thread={thread}
         onSend={onSend}
         showSchedule={showSchedule}
+        companyJobs={companyJobs}
+        onScheduleInterview={onScheduleInterview}
       />
     </>
   );
@@ -589,9 +647,15 @@ function HeaderIconButton({
 function MessageList({
   thread,
   viewerInitials,
+  viewerRole,
+  onAcceptInterview,
+  onDeclineInterview,
 }: {
   thread: Thread;
   viewerInitials: string;
+  viewerRole?: "company" | "talent";
+  onAcceptInterview?: MessagingPanelProps["onAcceptInterview"];
+  onDeclineInterview?: MessagingPanelProps["onDeclineInterview"];
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -636,6 +700,9 @@ function MessageList({
                       next={g.messages[idx + 1]}
                       threadKind={thread.kind}
                       viewerInitials={viewerInitials}
+                      viewerRole={viewerRole}
+                      onAcceptInterview={onAcceptInterview}
+                      onDeclineInterview={onDeclineInterview}
                     />
                   ))}
                 </div>
@@ -697,18 +764,32 @@ function MessageBubble({
   next,
   threadKind,
   viewerInitials,
+  viewerRole,
+  onAcceptInterview,
+  onDeclineInterview,
 }: {
   message: Message;
   previous?: Message;
   next?: Message;
   threadKind: ThreadKind;
   viewerInitials: string;
+  viewerRole?: "company" | "talent";
+  onAcceptInterview?: MessagingPanelProps["onAcceptInterview"];
+  onDeclineInterview?: MessagingPanelProps["onDeclineInterview"];
 }) {
   if (message.system) {
     // Check if this is a structured interview card
     const card = parseInterviewCard(message.body);
     if (card) {
-      return <InterviewCardBubble card={card} at={message.at} />;
+      return (
+        <InterviewCardBubble
+          card={card}
+          at={message.at}
+          viewerRole={viewerRole}
+          onAcceptInterview={onAcceptInterview}
+          onDeclineInterview={onDeclineInterview}
+        />
+      );
     }
     return (
       <div className="my-2 flex justify-center">
@@ -824,10 +905,14 @@ function Composer({
   thread,
   onSend,
   showSchedule,
+  companyJobs,
+  onScheduleInterview,
 }: {
   thread: Thread;
   onSend: (body: string) => void;
   showSchedule: boolean;
+  companyJobs?: CompanyJobOption[];
+  onScheduleInterview?: MessagingPanelProps["onScheduleInterview"];
 }) {
   // ThreadView uses `key={thread.id}` so this Composer is remounted
   // whenever the active conversation changes. That means `draft` naturally
@@ -869,7 +954,12 @@ function Composer({
     <>
       <AnimatePresence>
         {scheduling && (
-          <ScheduleStrip onClose={() => setScheduling(false)} />
+          <ScheduleStrip
+            thread={thread}
+            companyJobs={companyJobs}
+            onScheduleInterview={onScheduleInterview}
+            onClose={() => setScheduling(false)}
+          />
         )}
       </AnimatePresence>
       <form
@@ -988,7 +1078,104 @@ function ComposerIconButton({
   );
 }
 
-function ScheduleStrip({ onClose }: { onClose: () => void }) {
+function generateSmartSlots(): { label: string; iso: string }[] {
+  const now = new Date();
+  const slots: { label: string; iso: string }[] = [];
+  const hours = [10, 14, 16]; // 10 AM, 2 PM, 4 PM
+
+  const dayLabel = (d: Date): string => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const target = new Date(d);
+    target.setHours(0, 0, 0, 0);
+    const diff = Math.round(
+      (target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
+    );
+    if (diff === 0) return "Today";
+    if (diff === 1) return "Tomorrow";
+    return d.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
+  };
+
+  const hourLabel = (h: number): string => {
+    const ampm = h >= 12 ? "pm" : "am";
+    const h12 = h > 12 ? h - 12 : h === 0 ? 12 : h;
+    return `${h12}${ampm}`;
+  };
+
+  for (let dayOffset = 0; dayOffset <= 10 && slots.length < 6; dayOffset++) {
+    const d = new Date(now);
+    d.setDate(d.getDate() + dayOffset);
+    if (d.getDay() === 0 || d.getDay() === 6) continue; // skip weekends
+
+    for (const h of hours) {
+      const slot = new Date(d);
+      slot.setHours(h, 0, 0, 0);
+      if (slot.getTime() - now.getTime() < 60 * 60 * 1000) continue; // at least 1h from now
+      slots.push({ label: `${dayLabel(slot)} ${hourLabel(h)}`, iso: slot.toISOString() });
+      if (slots.length >= 6) break;
+    }
+  }
+  return slots;
+}
+
+function ScheduleStrip({
+  thread,
+  companyJobs,
+  onScheduleInterview,
+  onClose,
+}: {
+  thread: Thread;
+  companyJobs?: CompanyJobOption[];
+  onScheduleInterview?: MessagingPanelProps["onScheduleInterview"];
+  onClose: () => void;
+}) {
+  const [selectedDates, setSelectedDates] = useState<string[]>([]);
+  const [selectedJobId, setSelectedJobId] = useState<string>(
+    companyJobs?.[0]?.id ?? ""
+  );
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
+
+  const smartSlots = useMemo(() => generateSmartSlots(), []);
+
+  function toggleSlot(iso: string) {
+    setSelectedDates((prev) => {
+      if (prev.includes(iso)) return prev.filter((d) => d !== iso);
+      if (prev.length >= 3) return prev; // max 3
+      return [...prev, iso];
+    });
+    setError(null);
+  }
+
+  async function handleSend() {
+    if (!onScheduleInterview || !thread.talentUserId || !selectedJobId) return;
+    if (selectedDates.length === 0) {
+      setError("Select at least one time slot.");
+      return;
+    }
+    setSending(true);
+    setError(null);
+    try {
+      const res = await onScheduleInterview(thread.id, thread.talentUserId, {
+        jobId: selectedJobId,
+        dates: selectedDates,
+      });
+      if (res?.ok) {
+        setSuccess(true);
+        setTimeout(onClose, 1200);
+      } else {
+        setError(res?.message ?? "Failed to send invitation.");
+      }
+    } catch {
+      setError("Something went wrong.");
+    } finally {
+      setSending(false);
+    }
+  }
+
+  const jobs = companyJobs ?? [];
+
   return (
     <motion.div
       initial={{ height: 0, opacity: 0 }}
@@ -998,31 +1185,107 @@ function ScheduleStrip({ onClose }: { onClose: () => void }) {
       className="overflow-hidden border-t border-accent/20 bg-gradient-to-r from-accent/10 via-accent/5 to-transparent"
     >
       <div className="flex items-start gap-3 px-4 py-3 sm:px-5">
-        <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-accent/15 text-accent">
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-accent/15 text-accent">
           <CalendarClock className="h-4 w-4" />
         </span>
-        <div className="flex-1">
+        <div className="flex-1 min-w-0">
           <p className="text-sm font-semibold text-heading font-raleway">
             Schedule an interview
           </p>
-          <p className="mt-0.5 text-xs text-body font-raleway">
-            Pick a time slot and we&apos;ll add it to both calendars. Coming
-            soon.
-          </p>
-          <div className="mt-2 flex flex-wrap gap-1.5">
-            {["Today 4pm", "Tomorrow 10am", "Fri 2pm", "Next week"].map(
-              (slot) => (
-                <button
-                  key={slot}
-                  type="button"
-                  disabled
-                  className="rounded-full border border-accent/30 bg-surface px-3 py-1 text-[11px] font-semibold text-accent transition-opacity disabled:cursor-not-allowed disabled:opacity-70 font-raleway"
-                >
-                  {slot}
-                </button>
-              )
-            )}
-          </div>
+
+          {success ? (
+            <p className="mt-1 text-xs font-semibold text-accent font-raleway">
+              Invitation sent!
+            </p>
+          ) : (
+            <>
+              {jobs.length === 0 ? (
+                <p className="mt-0.5 text-xs text-body font-raleway">
+                  No published jobs to schedule interviews for.
+                </p>
+              ) : (
+                <>
+                  {jobs.length > 1 && (
+                    <select
+                      value={selectedJobId}
+                      onChange={(e) => setSelectedJobId(e.target.value)}
+                      className="mt-1.5 w-full rounded-lg border border-edge bg-surface px-2.5 py-1.5 text-xs text-heading font-raleway focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent/30"
+                    >
+                      {jobs.map((j) => (
+                        <option key={j.id} value={j.id}>
+                          {j.title}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                  {jobs.length === 1 && (
+                    <p className="mt-0.5 text-[11px] text-body font-jetbrains truncate">
+                      For: {jobs[0].title}
+                    </p>
+                  )}
+
+                  <p className="mt-2 text-[10px] uppercase tracking-[0.08em] text-subtle font-jetbrains">
+                    Pick up to 3 time slots
+                  </p>
+                  <div className="mt-1.5 flex flex-wrap gap-1.5">
+                    {smartSlots.map((slot) => {
+                      const isSelected = selectedDates.includes(slot.iso);
+                      return (
+                        <button
+                          key={slot.iso}
+                          type="button"
+                          onClick={() => toggleSlot(slot.iso)}
+                          disabled={
+                            !isSelected && selectedDates.length >= 3
+                          }
+                          className={cn(
+                            "rounded-full border px-3 py-1 text-[11px] font-semibold transition-all font-raleway",
+                            isSelected
+                              ? "border-accent bg-accent text-white shadow-sm"
+                              : "border-accent/30 bg-surface text-accent hover:bg-accent/10",
+                            !isSelected &&
+                              selectedDates.length >= 3 &&
+                              "opacity-40 cursor-not-allowed"
+                          )}
+                        >
+                          {slot.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {error && (
+                    <p className="mt-1.5 text-[11px] text-red-500 font-raleway">
+                      {error}
+                    </p>
+                  )}
+
+                  <div className="mt-2.5 flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={handleSend}
+                      disabled={
+                        sending ||
+                        selectedDates.length === 0 ||
+                        !selectedJobId
+                      }
+                      className="inline-flex items-center gap-1.5 rounded-full bg-accent px-4 py-1.5 text-[11px] font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed font-raleway"
+                    >
+                      {sending ? (
+                        <span className="h-3 w-3 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                      ) : (
+                        <Send className="h-3 w-3" />
+                      )}
+                      Send invitation
+                    </button>
+                    <span className="text-[10px] text-subtle font-jetbrains">
+                      {selectedDates.length}/3 selected
+                    </span>
+                  </div>
+                </>
+              )}
+            </>
+          )}
         </div>
         <button
           type="button"
@@ -1124,6 +1387,8 @@ function EmptyThreadPane({
 
 interface InterviewCard {
   type: "interview_invite" | "interview_accepted" | "interview_declined";
+  invitation_id?: string;
+  job_id?: string;
   job_title: string;
   proposed_dates?: string[];
   accepted_date?: string;
@@ -1153,24 +1418,79 @@ function parseInterviewCard(body: string): InterviewCard | null {
 function InterviewCardBubble({
   card,
   at,
+  viewerRole,
+  onAcceptInterview,
+  onDeclineInterview,
 }: {
   card: InterviewCard;
   at: string;
+  viewerRole?: "company" | "talent";
+  onAcceptInterview?: MessagingPanelProps["onAcceptInterview"];
+  onDeclineInterview?: MessagingPanelProps["onDeclineInterview"];
 }) {
+  const [acting, setActing] = useState(false);
+  const [actionDone, setActionDone] = useState<"accepted" | "declined" | null>(null);
+  const [declineMode, setDeclineMode] = useState(false);
+  const [declineReason, setDeclineReason] = useState("");
+  const [actionError, setActionError] = useState<string | null>(null);
+
   const isInvite = card.type === "interview_invite";
   const isAccepted = card.type === "interview_accepted";
   const isDeclined = card.type === "interview_declined";
 
-  const borderCls = isAccepted
+  const canAct =
+    viewerRole === "talent" &&
+    isInvite &&
+    !!card.invitation_id &&
+    !actionDone;
+
+  const borderCls = isAccepted || actionDone === "accepted"
     ? "border-accent/30"
-    : isDeclined
+    : isDeclined || actionDone === "declined"
     ? "border-red-500/30"
     : "border-amber-500/30";
-  const bgCls = isAccepted
+  const bgCls = isAccepted || actionDone === "accepted"
     ? "bg-accent/5"
-    : isDeclined
+    : isDeclined || actionDone === "declined"
     ? "bg-red-500/5"
     : "bg-amber-500/5";
+
+  async function handleAccept(dateIso: string) {
+    if (!onAcceptInterview || !card.invitation_id) return;
+    setActing(true);
+    setActionError(null);
+    try {
+      const res = await onAcceptInterview(card.invitation_id, dateIso);
+      if (res?.ok) {
+        setActionDone("accepted");
+      } else {
+        setActionError(res?.message ?? "Failed to accept.");
+      }
+    } catch {
+      setActionError("Something went wrong.");
+    } finally {
+      setActing(false);
+    }
+  }
+
+  async function handleDecline() {
+    if (!onDeclineInterview || !card.invitation_id) return;
+    setActing(true);
+    setActionError(null);
+    try {
+      const res = await onDeclineInterview(card.invitation_id, declineReason.trim() || undefined);
+      if (res?.ok) {
+        setActionDone("declined");
+        setDeclineMode(false);
+      } else {
+        setActionError(res?.message ?? "Failed to decline.");
+      }
+    } catch {
+      setActionError("Something went wrong.");
+    } finally {
+      setActing(false);
+    }
+  }
 
   return (
     <motion.div
@@ -1188,7 +1508,7 @@ function InterviewCardBubble({
       >
         {/* Card header */}
         <div className="flex items-center gap-2 px-4 py-2.5 border-b border-edge/30">
-          {isInvite && (
+          {isInvite && !actionDone && (
             <>
               <CalendarClock className="h-4 w-4 text-amber-500" />
               <span className="text-xs font-semibold text-amber-600 font-raleway">
@@ -1196,7 +1516,7 @@ function InterviewCardBubble({
               </span>
             </>
           )}
-          {isAccepted && (
+          {(isAccepted || actionDone === "accepted") && (
             <>
               <CheckCheck className="h-4 w-4 text-accent" />
               <span className="text-xs font-semibold text-accent font-raleway">
@@ -1204,7 +1524,7 @@ function InterviewCardBubble({
               </span>
             </>
           )}
-          {isDeclined && (
+          {(isDeclined || actionDone === "declined") && (
             <>
               <X className="h-4 w-4 text-red-500" />
               <span className="text-xs font-semibold text-red-500 font-raleway">
@@ -1220,53 +1540,130 @@ function InterviewCardBubble({
             {card.job_title}
           </p>
 
-          {/* Proposed dates (invite) */}
-          {isInvite && card.proposed_dates && card.proposed_dates.length > 0 && (
-            <div className="space-y-1">
+          {/* Proposed dates (invite) — talent can click to accept */}
+          {isInvite && !actionDone && card.proposed_dates && card.proposed_dates.length > 0 && (
+            <div className="space-y-1.5">
               <p className="text-[10px] uppercase tracking-[0.08em] text-subtle font-jetbrains">
-                Proposed times
+                {canAct ? "Pick a time to accept" : "Proposed times"}
               </p>
-              {card.proposed_dates.map((d, i) => {
-                const date = new Date(d);
-                return (
-                  <div
-                    key={i}
-                    className="inline-flex items-center gap-1.5 mr-2 rounded-lg bg-surface/60 border border-edge/40 px-2.5 py-1 text-[11px] font-medium text-heading font-raleway"
-                  >
-                    <CalendarClock className="h-3 w-3 text-amber-500" />
-                    {date.toLocaleDateString(undefined, {
-                      weekday: "short",
-                      month: "short",
-                      day: "numeric",
-                    })}{" "}
-                    at{" "}
-                    {date.toLocaleTimeString(undefined, {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </div>
-                );
-              })}
+              <div className="flex flex-wrap gap-1.5">
+                {card.proposed_dates.map((d, i) => {
+                  const date = new Date(d);
+                  const label = `${date.toLocaleDateString(undefined, {
+                    weekday: "short",
+                    month: "short",
+                    day: "numeric",
+                  })} at ${date.toLocaleTimeString(undefined, {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}`;
+                  return canAct ? (
+                    <button
+                      key={i}
+                      type="button"
+                      disabled={acting}
+                      onClick={() => handleAccept(d)}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-accent/40 bg-accent/10 px-2.5 py-1.5 text-[11px] font-semibold text-accent transition-all hover:bg-accent hover:text-white hover:border-accent disabled:opacity-50 font-raleway"
+                    >
+                      <CalendarClock className="h-3 w-3" />
+                      {label}
+                    </button>
+                  ) : (
+                    <div
+                      key={i}
+                      className="inline-flex items-center gap-1.5 rounded-lg bg-surface/60 border border-edge/40 px-2.5 py-1 text-[11px] font-medium text-heading font-raleway"
+                    >
+                      <CalendarClock className="h-3 w-3 text-amber-500" />
+                      {label}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           )}
 
           {/* Accepted date */}
-          {isAccepted && card.accepted_date && (
+          {(isAccepted || actionDone === "accepted") && (card.accepted_date || actionDone) && (
             <div className="flex items-center gap-2 rounded-lg bg-accent/10 border border-accent/20 px-3 py-2">
               <CheckCheck className="h-4 w-4 text-accent shrink-0" />
               <span className="text-xs font-semibold text-accent font-raleway">
-                {new Date(card.accepted_date).toLocaleDateString(undefined, {
-                  weekday: "long",
-                  month: "long",
-                  day: "numeric",
-                })}{" "}
-                at{" "}
-                {new Date(card.accepted_date).toLocaleTimeString(undefined, {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
+                {actionDone === "accepted"
+                  ? "You accepted this invitation!"
+                  : card.accepted_date
+                  ? `${new Date(card.accepted_date).toLocaleDateString(undefined, {
+                      weekday: "long",
+                      month: "long",
+                      day: "numeric",
+                    })} at ${new Date(card.accepted_date).toLocaleTimeString(undefined, {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}`
+                  : "Confirmed"}
               </span>
             </div>
+          )}
+
+          {/* Talent action buttons — decline / propose new time */}
+          {canAct && !declineMode && (
+            <div className="flex items-center gap-2 pt-1">
+              <button
+                type="button"
+                disabled={acting}
+                onClick={() => setDeclineMode(true)}
+                className="inline-flex items-center gap-1 rounded-lg border border-red-500/30 bg-red-500/5 px-3 py-1.5 text-[11px] font-semibold text-red-500 transition-colors hover:bg-red-500/10 disabled:opacity-50 font-raleway"
+              >
+                <X className="h-3 w-3" />
+                Decline
+              </button>
+            </div>
+          )}
+
+          {/* Decline form */}
+          {canAct && declineMode && (
+            <div className="space-y-2 pt-1">
+              <textarea
+                value={declineReason}
+                onChange={(e) => setDeclineReason(e.target.value)}
+                placeholder="Reason or suggest another time (optional)…"
+                rows={2}
+                className="w-full resize-none rounded-lg border border-edge bg-surface px-3 py-2 text-xs text-heading placeholder:text-subtle focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent/20 font-raleway"
+              />
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  disabled={acting}
+                  onClick={handleDecline}
+                  className="inline-flex items-center gap-1 rounded-lg bg-red-500 px-3 py-1.5 text-[11px] font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50 font-raleway"
+                >
+                  {acting ? (
+                    <span className="h-3 w-3 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                  ) : (
+                    <X className="h-3 w-3" />
+                  )}
+                  Confirm decline
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setDeclineMode(false); setDeclineReason(""); }}
+                  className="text-[11px] font-medium text-body hover:text-heading font-raleway"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+
+          {actionDone === "declined" && (
+            <p className="text-xs text-red-500/80 font-raleway">
+              You declined this invitation.
+            </p>
+          )}
+
+          {/* Error */}
+          {actionError && (
+            <p className="text-[11px] text-red-500 font-raleway">
+              {actionError}
+            </p>
           )}
 
           {/* Message */}

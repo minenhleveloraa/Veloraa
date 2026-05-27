@@ -234,6 +234,8 @@ async function hydrateThreads(params: {
       lastMessage: row.last_message_preview ?? undefined,
       lastMessageAt: row.last_message_at ?? row.created_at,
       messages,
+      talentUserId: row.talent_user_id ?? null,
+      companyUserId: row.company_user_id ?? null,
     };
   });
 

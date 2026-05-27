@@ -2,57 +2,57 @@
 
 /* ===== Light / Dark theme variables ===== */
 :root {
-  --v-page: #F5F0E8;
-  --v-page-alt: #FAFAF8;
-  --v-surface: #FAFAF8;
-  --v-heading: #0A2E1A;
+  --v-page: #f5f0e8;
+  --v-page-alt: #fafaf8;
+  --v-surface: #fafaf8;
+  --v-heading: #0a2e1a;
   --v-body: rgba(10, 46, 26, 0.6);
   --v-subtle: rgba(10, 46, 26, 0.35);
-  --v-accent: #16A34A;
-  --v-accent-glow: #4ADE80;
+  --v-accent: #16a34a;
+  --v-accent-glow: #4ade80;
   --v-edge: rgba(10, 46, 26, 0.08);
   --v-glow-soft: rgba(22, 163, 74, 0.06);
   --v-pill-bg: rgba(22, 163, 74, 0.08);
   --v-pill-border: rgba(22, 163, 74, 0.2);
-  --v-pill-text: #16A34A;
-  --v-btn-bg: #0A2E1A;
-  --v-btn-fg: #F5F0E8;
+  --v-pill-text: #16a34a;
+  --v-btn-bg: #0a2e1a;
+  --v-btn-fg: #f5f0e8;
   --v-ghost-border: rgba(10, 46, 26, 0.2);
-  --v-ghost-text: #0A2E1A;
-  --v-check: #16A34A;
+  --v-ghost-text: #0a2e1a;
+  --v-check: #16a34a;
   --v-icon-dim: rgba(10, 46, 26, 0.6);
-  --v-scrollbar-track: #F5F0E8;
-  --v-scrollbar-thumb: #B8B09A;
-  --v-scrollbar-hover: #0A2E1A;
+  --v-scrollbar-track: #f5f0e8;
+  --v-scrollbar-thumb: #b8b09a;
+  --v-scrollbar-hover: #0a2e1a;
   --v-selection-bg: rgba(22, 163, 74, 0.2);
-  --v-selection-fg: #0A2E1A;
+  --v-selection-fg: #0a2e1a;
 }
 
 .dark {
   --v-page: #061509;
-  --v-page-alt: #0A2E1A;
-  --v-surface: #0F2318;
-  --v-heading: #FAFAF8;
-  --v-body: #B8B09A;
+  --v-page-alt: #0a2e1a;
+  --v-surface: #0f2318;
+  --v-heading: #fafaf8;
+  --v-body: #b8b09a;
   --v-subtle: rgba(184, 176, 154, 0.5);
-  --v-accent: #4ADE80;
-  --v-accent-glow: #4ADE80;
+  --v-accent: #4ade80;
+  --v-accent-glow: #4ade80;
   --v-edge: rgba(74, 222, 128, 0.1);
   --v-glow-soft: rgba(74, 222, 128, 0.04);
   --v-pill-bg: rgba(74, 222, 128, 0.05);
   --v-pill-border: rgba(74, 222, 128, 0.2);
-  --v-pill-text: #4ADE80;
-  --v-btn-bg: #4ADE80;
+  --v-pill-text: #4ade80;
+  --v-btn-bg: #4ade80;
   --v-btn-fg: #061509;
   --v-ghost-border: rgba(74, 222, 128, 0.3);
-  --v-ghost-text: #4ADE80;
-  --v-check: #4ADE80;
+  --v-ghost-text: #4ade80;
+  --v-check: #4ade80;
   --v-icon-dim: rgba(74, 222, 128, 0.7);
   --v-scrollbar-track: #061509;
-  --v-scrollbar-thumb: #0A2E1A;
-  --v-scrollbar-hover: #16A34A;
+  --v-scrollbar-thumb: #0a2e1a;
+  --v-scrollbar-hover: #16a34a;
   --v-selection-bg: rgba(74, 222, 128, 0.25);
-  --v-selection-fg: #FAFAF8;
+  --v-selection-fg: #fafaf8;
 }
 
 /* ===== Tailwind v4 theme tokens ===== */
@@ -63,14 +63,14 @@
   --font-mono: var(--font-mono);
 
   /* Raw palette (always available, theme-independent) */
-  --color-dark-green: #0A2E1A;
-  --color-mid-green: #16A34A;
-  --color-bright-green: #4ADE80;
-  --color-beige: #F5F0E8;
-  --color-warm-white: #FAFAF8;
-  --color-muted-beige: #B8B09A;
+  --color-dark-green: #0a2e1a;
+  --color-mid-green: #16a34a;
+  --color-bright-green: #4ade80;
+  --color-beige: #f5f0e8;
+  --color-warm-white: #fafaf8;
+  --color-muted-beige: #b8b09a;
   --color-dark-surface: #061509;
-  --color-card-surface: #0F2318;
+  --color-card-surface: #0f2318;
 
   /* Semantic tokens (swap with theme) */
   --color-page: var(--v-page);
@@ -121,10 +121,19 @@
 }
 
 /* ===== Scrollbar ===== */
-::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: var(--v-scrollbar-track); }
-::-webkit-scrollbar-thumb { background: var(--v-scrollbar-thumb); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: var(--v-scrollbar-hover); }
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--v-scrollbar-track);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--v-scrollbar-thumb);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--v-scrollbar-hover);
+}
 
 /* ===== Selection ===== */
 ::selection {
@@ -138,7 +147,7 @@
   isolation: isolate;
 }
 .candidate-card::before {
-  content: '';
+  content: "";
   position: absolute;
   inset: 0;
   border-radius: inherit;
@@ -150,8 +159,12 @@
     rgba(255, 255, 255, 0.06) 60%,
     rgba(74, 222, 128, 0.2)
   );
-  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
   mask-composite: exclude;
   -webkit-mask-composite: xor;
   pointer-events: none;
@@ -163,17 +176,174 @@
 }
 
 @keyframes shimmer-line {
-  0%, 100% { opacity: 0.3; transform: translateX(-60%); }
-  50% { opacity: 1; transform: translateX(60%); }
+  0%,
+  100% {
+    opacity: 0.3;
+    transform: translateX(-60%);
+  }
+  50% {
+    opacity: 1;
+    transform: translateX(60%);
+  }
 }
 .card-shimmer-line {
   animation: shimmer-line 4s ease-in-out infinite;
 }
 
 @keyframes score-pulse {
-  0%, 100% { box-shadow: 0 8px 24px -8px rgba(74, 222, 128, 0.5); }
-  50% { box-shadow: 0 8px 32px -6px rgba(74, 222, 128, 0.8); }
+  0%,
+  100% {
+    box-shadow: 0 8px 24px -8px rgba(74, 222, 128, 0.5);
+  }
+  50% {
+    box-shadow: 0 8px 32px -6px rgba(74, 222, 128, 0.8);
+  }
 }
 .ai-score-badge {
   animation: score-pulse 3s ease-in-out infinite;
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   Dashboard futuristic hero + backdrop animations.
+   Used by /company/dashboard. Pure CSS so the hero stays SSR-safe.
+   ───────────────────────────────────────────────────────────────── */
+@keyframes velora-orbit {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+.velora-orbit {
+  animation: velora-orbit 22s linear infinite;
+  transform-origin: center;
+}
+.velora-orbit-reverse {
+  animation: velora-orbit 32s linear infinite reverse;
+  transform-origin: center;
+}
+
+@keyframes velora-scan {
+  0% {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+.velora-scan {
+  animation: velora-scan 5s ease-in-out infinite;
+}
+
+@keyframes velora-drift-y {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-14px);
+  }
+}
+.velora-drift-y {
+  animation: velora-drift-y 9s ease-in-out infinite;
+}
+.velora-drift-y-slow {
+  animation: velora-drift-y 14s ease-in-out infinite;
+}
+
+@keyframes velora-drift-x {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(10px);
+  }
+}
+.velora-drift-x-slow {
+  animation: velora-drift-x 18s ease-in-out infinite;
+}
+
+@keyframes velora-pulse-soft {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+.velora-pulse-soft {
+  animation: velora-pulse-soft 3.5s ease-in-out infinite;
+}
+
+@keyframes velora-float {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  33% {
+    transform: translateY(-6px) rotate(0.5deg);
+  }
+  66% {
+    transform: translateY(3px) rotate(-0.3deg);
+  }
+}
+.velora-float {
+  animation: velora-float 8s ease-in-out infinite;
+}
+
+@keyframes velora-glass-shimmer {
+  0% {
+    transform: translateX(-100%) skewX(-15deg);
+    opacity: 0;
+  }
+  30% {
+    opacity: 0.4;
+  }
+  100% {
+    transform: translateX(200%) skewX(-15deg);
+    opacity: 0;
+  }
+}
+.velora-glass-shimmer {
+  animation: velora-glass-shimmer 6s ease-in-out infinite;
+}
+
+@keyframes velora-gradient-shift {
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+.velora-gradient-shift {
+  background-size: 200% 200%;
+  animation: velora-gradient-shift 8s ease infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .velora-orbit,
+  .velora-orbit-reverse,
+  .velora-scan,
+  .velora-drift-y,
+  .velora-drift-y-slow,
+  .velora-drift-x-slow,
+  .velora-pulse-soft,
+  .velora-float,
+  .velora-glass-shimmer,
+  .velora-gradient-shift {
+    animation: none !important;
+  }
 }
