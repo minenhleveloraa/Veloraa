@@ -187,7 +187,7 @@ export default function ForTalent() {
       </section>
 
       {/* ===== Benefits bento grid ===== */}
-      <section className="px-6 pb-24 lg:px-8">
+      <section className="overflow-hidden px-6 pb-24 lg:px-8">
         <motion.div
           {...motionSection}
           className="mx-auto mb-14 max-w-2xl text-center"
@@ -640,7 +640,7 @@ export default function ForTalent() {
       </section>
 
       {/* ===== Stats ===== */}
-      <section className="px-6 py-24 lg:px-8">
+      <section className="overflow-hidden px-6 py-24 lg:px-8">
         <motion.div
           className="mx-auto grid max-w-4xl gap-8 sm:grid-cols-2 lg:grid-cols-4"
           {...motionStagger}
@@ -661,7 +661,7 @@ export default function ForTalent() {
       </section>
 
       {/* ===== Testimonials ===== */}
-      <section className="border-t border-edge bg-page-alt px-6 py-24 transition-colors duration-300 lg:px-8">
+      <section className="overflow-hidden border-t border-edge bg-page-alt px-6 py-24 transition-colors duration-300 lg:px-8">
         <motion.div
           {...motionSection}
           className="mx-auto mb-14 max-w-2xl text-center"

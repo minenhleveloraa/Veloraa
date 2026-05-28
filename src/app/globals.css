@@ -1,5 +1,12 @@
 @import "tailwindcss";
 
+/* ===== Global mobile overflow guard ===== */
+html,
+body {
+  overflow-x: hidden;
+  max-width: 100vw;
+}
+
 /* ===== Light / Dark theme variables ===== */
 :root {
   --v-page: #f5f0e8;

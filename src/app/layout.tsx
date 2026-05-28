@@ -71,7 +71,7 @@ export default async function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${raleway.variable} ${libreBaskerville.variable} ${jetbrainsMono.variable} h-full antialiased${initialTheme === "dark" ? " dark" : ""}`}
+      className={`${raleway.variable} ${libreBaskerville.variable} ${jetbrainsMono.variable} h-full overflow-x-hidden antialiased${initialTheme === "dark" ? " dark" : ""}`}
     >
       <body className="min-h-full flex flex-col bg-page text-heading font-raleway transition-colors duration-300">
         <ThemeProvider initialTheme={initialTheme}>

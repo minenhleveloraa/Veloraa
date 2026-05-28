@@ -15,7 +15,7 @@ export default async function AuthLayout({
   if (user) redirect("/profile");
 
   return (
-    <div className="relative flex min-h-screen flex-col bg-page transition-colors duration-300">
+    <div className="relative flex min-h-screen flex-col overflow-hidden bg-page transition-colors duration-300">
       <div className="pointer-events-none absolute left-1/2 top-0 -translate-x-1/2">
         <div className="h-[500px] w-[700px] rounded-full bg-glow-soft blur-[140px]" />
       </div>

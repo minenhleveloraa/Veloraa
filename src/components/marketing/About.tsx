@@ -235,7 +235,7 @@ function FounderPortrait({
 
 function HeroVisual({ prefersReduced }: { prefersReduced: boolean | null }) {
   return (
-    <div className="relative min-h-[460px] lg:min-h-[560px]">
+    <div className="relative min-h-[460px] overflow-hidden lg:min-h-[560px]">
       <div className="absolute inset-0 rounded-[2rem] border border-edge bg-surface/70 shadow-[0_30px_80px_rgba(10,46,26,0.10)] backdrop-blur-2xl dark:bg-card-surface/60" />
       <div className="absolute inset-x-5 top-5 flex gap-3 overflow-hidden sm:inset-x-8 sm:top-8">
         {["VET", "MATCH", "HIRE", "GROW"].map((label, i) => (
@@ -391,7 +391,7 @@ export default function About() {
         </div>
       </section>
 
-      <section className="border-y border-edge bg-page-alt/60 px-6 py-24 transition-colors duration-300 lg:px-8">
+      <section className="overflow-hidden border-y border-edge bg-page-alt/60 px-6 py-24 transition-colors duration-300 lg:px-8">
         <div className="mx-auto grid max-w-6xl gap-12 lg:grid-cols-[0.75fr_1.25fr] lg:items-start">
           <motion.div {...motionSection}>
             <span className="mb-3 inline-block text-xs uppercase tracking-[0.08em] text-accent font-jetbrains">
@@ -554,7 +554,7 @@ export default function About() {
         </div>
       </section>
 
-      <section className="bg-page px-6 py-24 lg:px-8">
+      <section className="overflow-hidden bg-page px-6 py-24 lg:px-8">
         <div className="mx-auto max-w-7xl">
           <motion.div
             {...motionSection}

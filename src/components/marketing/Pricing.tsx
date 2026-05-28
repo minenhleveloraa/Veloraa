@@ -459,7 +459,7 @@ export default function Pricing({ defaultCurrency = "USD" }: { defaultCurrency?:
       </section>
 
       {/* Pricing cards */}
-      <section className="relative px-6 pb-24 pt-12 lg:px-8">
+      <section className="relative overflow-hidden px-6 pb-24 pt-12 lg:px-8">
         <motion.div
           className="mx-auto grid max-w-6xl gap-6 md:grid-cols-3 md:items-start"
           {...(prefersReduced

@@ -100,7 +100,7 @@ export default function CompanyShell({
   };
 
   return (
-    <div className="relative min-h-[100dvh] bg-page">
+    <div className="relative min-h-[100dvh] overflow-x-hidden bg-page">
       <CompanyTopNav
         companyName={companyName}
         planName={planName}
