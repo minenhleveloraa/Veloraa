@@ -211,13 +211,20 @@ function PricingCard({
         {/* Price */}
         <div className="mb-7">
           <div className="flex items-baseline gap-1">
-            <span className="text-sm text-subtle font-raleway">{symbol}</span>
+            <span
+              className={cn(
+                "font-bold text-heading font-sans",
+                symbol === "R" ? "text-3xl" : "text-4xl"
+              )}
+            >
+              {symbol}
+            </span>
             <motion.span
               key={`${displayPrice}-${currency}`}
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3 }}
-              className="text-5xl font-bold text-heading font-raleway"
+              className="text-5xl font-bold text-heading font-sans tracking-tight"
             >
               {isFree ? "0" : displayPrice.toLocaleString()}
             </motion.span>
@@ -225,7 +232,7 @@ function PricingCard({
               {isFree ? "forever" : "/ mo"}
             </span>
           </div>
-          <p className="mt-1.5 h-5 text-xs text-subtle font-raleway">
+          <p className="mt-1.5 h-5 text-xs text-subtle font-sans font-medium">
             {isFree
               ? "No credit card required"
               : isAnnual
@@ -349,7 +356,8 @@ function ComparisonTable({ currency, isAnnual }: { currency: Currency; isAnnual:
                   ) : (
                     <span
                       className={cn(
-                        j === 0 ? "text-subtle" : "text-heading/80"
+                        j === 0 ? "text-subtle" : "text-heading/80",
+                        (val.includes("$") || val.includes("R")) && "font-sans font-semibold"
                       )}
                     >
                       {val}
