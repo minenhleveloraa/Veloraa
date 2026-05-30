@@ -11,8 +11,10 @@ import {
   CalendarDays,
   Shield,
 } from "lucide-react";
+import { cookies } from "next/headers";
 import { requireApprovedCompany } from "@/lib/company/guard";
 import { createClient } from "@/lib/supabase/server";
+import { cn } from "@/lib/utils";
 import {
   BILLING_PLANS,
   getEffectivePlan,
@@ -49,6 +51,9 @@ export default async function CompanySubscriptionPage() {
     data: { user },
   } = await supabase.auth.getUser();
 
+  const cookieStore = await cookies();
+  const detectedCurrency = (cookieStore.get("v_currency")?.value || "USD") as Currency;
+
   const { data: employer } = await supabase
     .from("company_applications")
     .select(
@@ -62,10 +67,11 @@ export default async function CompanySubscriptionPage() {
   const currentPlan = BILLING_PLANS.find((p) => p.id === currentPlanId)!;
   const status = effective.status;
   const interval = (employer?.subscription_interval ?? "monthly") as "monthly" | "annual";
-  const provider = (employer?.payment_provider ?? "paddle") as "paddle" | "payfast";
   const currency = (employer?.subscription_currency ??
     employer?.payment_currency ??
-    "USD") as Currency;
+    detectedCurrency) as Currency;
+  const provider = (employer?.payment_provider ??
+    (currency === "ZAR" ? "payfast" : "paddle")) as "paddle" | "payfast";
   const periodEnd = employer?.current_period_end;
   const symbol = currency === "ZAR" ? "R" : "$";
 
@@ -138,11 +144,14 @@ export default async function CompanySubscriptionPage() {
             <div className="mt-2 flex flex-wrap items-center gap-4 text-xs text-body font-raleway">
               {currentPlanId !== "free" && (
                 <>
-                  <span className="flex items-center gap-1.5">
+                  <span className="flex items-center gap-1.5 font-sans font-medium">
                     <CreditCard className="h-3 w-3 text-subtle" />
-                    {symbol}{displayPrice}/mo
+                    <span>
+                      <span className="font-semibold">{symbol}</span>
+                      {displayPrice}/mo
+                    </span>
                     {interval === "annual" && (
-                      <span className="text-subtle">(billed annually)</span>
+                      <span className="text-subtle font-raleway text-[11px]">(billed annually)</span>
                     )}
                   </span>
                   <span className="flex items-center gap-1.5">
@@ -251,16 +260,24 @@ export default async function CompanySubscriptionPage() {
                   {p.description}
                 </p>
                 <div className="mt-4">
-                  <span className="text-3xl font-bold text-heading font-raleway">
-                    {isFree
-                      ? `${symbol}0`
-                      : `${symbol}${planPricing.monthly.toLocaleString()}`}
-                  </span>
-                  <span className="ml-1 text-xs text-subtle font-jetbrains">
-                    {isFree ? "forever" : "/ mo"}
-                  </span>
+                  <div className="flex items-baseline gap-0.5">
+                    <span
+                      className={cn(
+                        "font-bold text-heading font-sans",
+                        symbol === "R" ? "text-xl" : "text-2xl"
+                      )}
+                    >
+                      {symbol}
+                    </span>
+                    <span className="text-3xl font-bold text-heading font-sans tracking-tight">
+                      {isFree ? "0" : planPricing.monthly.toLocaleString()}
+                    </span>
+                    <span className="ml-1 text-xs text-subtle font-raleway">
+                      {isFree ? "forever" : "/ mo"}
+                    </span>
+                  </div>
                   {!isFree && (
-                    <p className="mt-0.5 text-[10px] text-subtle font-raleway">
+                    <p className="mt-0.5 text-[10px] text-subtle font-sans font-medium">
                       or {symbol}
                       {planPricing.annual.toLocaleString()}/yr (save {symbol}
                       {planPricing.savings.toLocaleString()})
@@ -378,7 +395,7 @@ export default async function CompanySubscriptionPage() {
                       </p>
                     </div>
                     <div className="flex shrink-0 items-center gap-3">
-                      <span className="text-xs font-semibold text-heading font-raleway">
+                      <span className="text-xs font-semibold text-heading font-sans">
                         {sym}
                         {major}
                       </span>
