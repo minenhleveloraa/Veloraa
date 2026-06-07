@@ -81,7 +81,7 @@ export default function TalentShell({
   };
 
   return (
-    <div className="relative min-h-[100dvh] overflow-hidden bg-page">
+    <div className="relative min-h-[100dvh] overflow-x-hidden bg-page">
       <ShellBackdrop />
 
       <TalentTopNav

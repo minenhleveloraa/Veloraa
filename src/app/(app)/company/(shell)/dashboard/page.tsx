@@ -310,7 +310,7 @@ function HeroLogo({
           <img
             src={logoUrl}
             alt={`${companyName} logo`}
-            className="h-full w-full object-contain p-4"
+            className="h-full w-full object-cover"
           />
         ) : (
           <span
@@ -640,7 +640,7 @@ function FuturisticHeroLogo({
           <img
             src={logoUrl}
             alt={`${companyName} logo`}
-            className="h-full w-full object-contain p-4"
+            className="h-full w-full object-cover"
           />
         ) : (
           <span className="text-4xl font-bold uppercase text-accent font-raleway sm:text-5xl">
@@ -802,7 +802,7 @@ function ApprovedDashboard({
       </section>
 
       {/* ── Row 2: Suggested talent + Upgrade + Funnel ───────────── */}
-      <section className="grid gap-6 lg:grid-cols-3">
+      <section className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         <SuggestedTalent talents={suggestedTalent} />
         {isFree ? (
           <UpgradeCallout />
@@ -825,7 +825,7 @@ function ApprovedDashboard({
 
 function SuggestedTalent({ talents }: { talents: SuggestedTalentItem[] }) {
   return (
-    <section className="relative flex flex-col rounded-3xl border border-edge bg-surface p-5 sm:p-6">
+    <section className="relative flex flex-col overflow-hidden rounded-2xl border border-edge bg-surface p-4 transition-all duration-300 hover:border-accent/25 hover:shadow-[0_24px_60px_-42px_rgba(10,46,26,0.3)] sm:rounded-3xl sm:p-6 max-h-[22rem] sm:max-h-none">
       <header className="flex items-start justify-between">
         <div>
           <h3 className="text-sm font-bold text-heading sm:text-base font-raleway">
@@ -857,7 +857,7 @@ function SuggestedTalent({ talents }: { talents: SuggestedTalentItem[] }) {
           </p>
         </div>
       ) : (
-        <ul className="mt-4 space-y-2.5">
+        <ul className="mt-4 flex-1 space-y-2.5 overflow-y-auto scrollbar-none">
           {talents.map((t) => (
             <li
               key={`${t.userId}-${t.jobId}`}
@@ -919,7 +919,7 @@ function talentInitials(name: string | null): string {
 
 function UpgradeCallout() {
   return (
-    <section className="group relative overflow-hidden rounded-3xl border border-edge bg-page-alt p-5 sm:p-6">
+    <section className="group relative overflow-hidden rounded-2xl border border-edge bg-page-alt p-4 transition-all duration-300 hover:border-accent/25 hover:shadow-[0_24px_60px_-42px_rgba(10,46,26,0.3)] sm:rounded-3xl sm:p-6 max-h-[22rem] sm:max-h-none">
       {/* Layered SVG mesh — beige base + green grid */}
       <div
         aria-hidden
@@ -988,7 +988,7 @@ function UpgradeCallout() {
 
 function ScaleInsightCallout({ planName }: { planName: string }) {
   return (
-    <section className="relative flex flex-col rounded-3xl border border-edge bg-gradient-to-br from-accent/10 via-surface to-surface p-5 sm:p-6">
+    <section className="relative flex flex-col overflow-hidden rounded-2xl border border-edge bg-gradient-to-br from-accent/10 via-surface to-surface p-4 transition-all duration-300 hover:border-accent/25 hover:shadow-[0_24px_60px_-42px_rgba(10,46,26,0.3)] sm:rounded-3xl sm:p-6 max-h-[22rem] sm:max-h-none">
       <span
         aria-hidden
         className="pointer-events-none absolute -right-12 -top-12 h-40 w-40 rounded-full bg-accent/15 blur-3xl"
@@ -1046,7 +1046,7 @@ function HiringFunnelCard({
   const max = Math.max(1, ...cols.map((c) => c.value));
 
   return (
-    <section className="relative flex flex-col overflow-hidden rounded-3xl border border-edge bg-surface p-5 sm:p-6">
+    <section className="relative flex flex-col overflow-hidden rounded-2xl border border-edge bg-surface p-4 transition-all duration-300 hover:border-accent/25 hover:shadow-[0_24px_60px_-42px_rgba(10,46,26,0.3)] sm:rounded-3xl sm:p-6 max-h-[22rem] sm:max-h-none">
       <header className="flex items-center justify-between gap-3">
         <h3 className="text-sm font-bold text-heading sm:text-base font-raleway">
           Hiring funnel

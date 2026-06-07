@@ -42,7 +42,7 @@ export default function TalentActivityPulse({
   const isQuiet = total === 0;
 
   return (
-    <section className="group relative overflow-hidden rounded-2xl border border-edge bg-surface p-4 shadow-[0_30px_60px_-30px_rgba(0,0,0,0.25)] sm:rounded-3xl sm:p-7">
+    <section className="group relative overflow-hidden rounded-2xl border border-edge bg-surface p-4 transition-all duration-300 hover:border-accent/25 hover:shadow-[0_24px_60px_-42px_rgba(10,46,26,0.3)] sm:rounded-3xl sm:p-6">
       <span aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden rounded-2xl sm:rounded-3xl">
         <span className="velora-glass-shimmer absolute inset-y-0 left-0 w-1/3 bg-gradient-to-r from-transparent via-white/[0.07] to-transparent" />
       </span>

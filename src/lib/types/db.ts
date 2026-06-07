@@ -29,6 +29,24 @@ export type ReviewStatus = "pending" | "approved" | "rejected" | "pending_update
  */
 export type AssessmentStatus = "pending" | "passed" | "failed";
 
+export interface VelscreenReportPayload {
+  scores: {
+    technical_depth: number;
+    problem_solving: number;
+    communication: number;
+    ownership: number;
+    self_awareness: number;
+    overall: number;
+  };
+  summary: string;
+  strengths: string[];
+  concerns: string[];
+  recommendation: "advance" | "hold" | "decline";
+  transcript: { role: string; content: string }[];
+  model: string;
+  completed_at: string;
+}
+
 export interface TalentApplication {
   user_id: string;
   avatar_url: string | null;
@@ -56,6 +74,10 @@ export interface TalentApplication {
   interview_status: AssessmentStatus;
   interview_reason: string | null;
   interview_decision_at: string | null;
+  velscreen_session_token: string | null;
+  velscreen_interview_url: string | null;
+  velscreen_report: VelscreenReportPayload | null;
+  velscreen_completed_at: string | null;
   created_at: string;
   updated_at: string;
 }

@@ -36,9 +36,6 @@ export default async function TalentMessagesPage() {
   ).toUpperCase();
 
   const threads = await listThreadsForUser(user.id);
-  const initialThreadId =
-    threads.find((t) => t.kind === "admin")?.id ?? threads[0]?.id;
-
   return (
     <div className="fixed inset-x-0 top-16 bottom-[calc(4.5rem_+_env(safe-area-inset-bottom))] bg-page lg:bottom-0">
       <TalentMessagesClient
@@ -46,7 +43,6 @@ export default async function TalentMessagesPage() {
         viewerUserId={user.id}
         viewerName={displayName}
         viewerInitials={viewerInitials}
-        initialThreadId={initialThreadId}
       />
     </div>
   );

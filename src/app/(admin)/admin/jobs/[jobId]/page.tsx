@@ -16,7 +16,6 @@ import { redirect } from "next/navigation";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { CompanyJob, JobStatus } from "@/lib/types/db";
 import { ApproveButton, RejectButton } from "@/components/admin/JobReviewActions";
-import { labelFor, SALARY_RANGES } from "@/lib/company/options";
 import TalentRecommender from "@/components/admin/TalentRecommender";
 
 export default async function AdminJobDetailPage({
@@ -143,7 +142,7 @@ export default async function AdminJobDetailPage({
               {job.salary_range && (
                 <DetailItem
                   label="Salary range"
-                  value={labelFor(SALARY_RANGES, job.salary_range)}
+                  value={job.salary_range}
                   icon={<DollarSign className="h-3.5 w-3.5 text-accent" />}
                 />
               )}

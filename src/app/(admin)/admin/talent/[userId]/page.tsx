@@ -37,6 +37,7 @@ import type {
 } from "@/lib/types/db";
 import DecisionPanel from "@/components/admin/DecisionPanel";
 import AssessmentPanel from "@/components/admin/AssessmentPanel";
+import VelscreenReportSection from "@/components/admin/VelscreenReportSection";
 import AnalysisResults from "@/components/talent/AnalysisResults";
 import MessageUserButton from "@/components/admin/MessageUserButton";
 import ProfileUpdateDiff from "@/components/admin/ProfileUpdateDiff";
@@ -333,7 +334,14 @@ export default async function AdminTalentDetailPage({
       {/* Post-approval vetting — technical + interview. Only meaningful
           once the applicant has cleared human review. */}
       {app.review_status === "approved" && (
-        <div className="mt-10">
+        <div className="mt-10 space-y-6">
+          <VelscreenReportSection
+            candidateName={applicantName}
+            roleType={app.headline || "Engineer"}
+            report={app.velscreen_report}
+            interviewUrl={app.velscreen_interview_url}
+            completedAt={app.velscreen_completed_at}
+          />
           <AssessmentPanel
             userId={userId}
             applicantName={applicantName}

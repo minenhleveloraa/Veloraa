@@ -27,11 +27,6 @@ export default async function CompanyMessagesPage() {
 
   const threads = await listThreadsForUser(profile.id);
 
-  // Prefer the admin thread on first load so the viewer sees the welcome
-  // message the moment they land on /messages.
-  const initialThreadId =
-    threads.find((t) => t.kind === "admin")?.id ?? threads[0]?.id;
-
   // Fetch published jobs for the interview scheduler
   const admin = createAdminClient();
   const { data: pubJobRows } = await admin
@@ -55,7 +50,6 @@ export default async function CompanyMessagesPage() {
         viewerName={companyName}
         viewerInitials={viewerInitials}
         companyJobs={companyJobs}
-        initialThreadId={initialThreadId}
       />
     </div>
   );

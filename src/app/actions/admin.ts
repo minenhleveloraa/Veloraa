@@ -15,7 +15,9 @@ import {
   technicalFailEmail,
   interviewPassEmail,
   interviewFailEmail,
+  velscreenInterviewEmail,
 } from "@/lib/email/templates";
+import { createHmac } from "crypto";
 import { seedAdminSupportThread } from "@/app/actions/messages";
 import { createNotification } from "@/lib/notifications/create";
 import type { TalentApplication } from "@/lib/types/db";
@@ -394,26 +396,128 @@ export async function passTechnical(
     getApplicantFirstName(parsed.data.user_id),
     getOrigin(),
   ]);
+
+  // ---------------------------------------------------------------
+  // Create Velscreen AI interview session
+  // ---------------------------------------------------------------
+  let interviewUrl = "";
+  let expiresAt = "";
+  const velscreenApiUrl = process.env.VELSCREEN_API_URL;
+  const velscreenSecret = process.env.VELSCREEN_API_SECRET;
+
+  if (velscreenApiUrl && velscreenSecret && email) {
+    try {
+      // Fetch candidate details for the session
+      const { data: appData } = await admin
+        .from("talent_applications")
+        .select("headline, resume_path, skills, bio")
+        .eq("user_id", parsed.data.user_id)
+        .maybeSingle();
+
+      const { data: profileData } = await admin
+        .from("profiles")
+        .select("full_name")
+        .eq("id", parsed.data.user_id)
+        .maybeSingle();
+
+      const candidateName = (profileData?.full_name as string) || "Candidate";
+      const roleType = (appData?.headline as string) || "Engineer";
+      const skills = (appData?.skills as string[]) || [];
+      const bio = (appData?.bio as string) || "";
+
+      const sessionPayload = JSON.stringify({
+        candidate_name: candidateName,
+        candidate_email: email,
+        role_type: roleType,
+        seniority: "Senior",
+        resume_summary: skills.length > 0
+          ? `Skills: ${skills.join(", ")}. ${bio.substring(0, 200)}`
+          : bio.substring(0, 400) || "Technical assessment passed.",
+        assessment_summary: "Passed Veloraa technical assessment.",
+        veloraa_user_id: parsed.data.user_id,
+      });
+
+      // Sign the payload with HMAC-SHA256
+      const hmac = createHmac("sha256", velscreenSecret);
+      hmac.update(sessionPayload, "utf8");
+      const signature = hmac.digest("hex");
+
+      const velRes = await fetch(`${velscreenApiUrl}/api/sessions`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-velscreen-signature": signature,
+        },
+        body: sessionPayload,
+      });
+
+      if (velRes.ok) {
+        const velData = await velRes.json();
+        interviewUrl = velData.interview_url || "";
+        expiresAt = velData.expires_at || "";
+
+        // Store the session info in the talent application
+        await admin
+          .from("talent_applications")
+          .update({
+            velscreen_session_token: velData.token,
+            velscreen_interview_url: interviewUrl,
+          })
+          .eq("user_id", parsed.data.user_id);
+
+        console.log(`[Admin] Velscreen session created for ${parsed.data.user_id}: ${interviewUrl}`);
+      } else {
+        console.error(`[Admin] Failed to create Velscreen session: ${velRes.status}`);
+      }
+    } catch (err) {
+      console.error("[Admin] Velscreen session creation error:", err);
+    }
+  }
+
+  // Send appropriate email based on whether Velscreen session was created
   if (email) {
-    const tmpl = technicalPassEmail({
-      firstName,
-      ctaHref: `${origin}/talent/dashboard`,
-    });
-    await sendEmail({ to: email, ...tmpl });
+    if (interviewUrl) {
+      // Send Velscreen-specific interview email with the direct link
+      const roleType = interviewUrl ? "Engineer" : "";
+      const { data: appForEmail } = await admin
+        .from("talent_applications")
+        .select("headline")
+        .eq("user_id", parsed.data.user_id)
+        .maybeSingle();
+
+      const tmpl = velscreenInterviewEmail({
+        firstName,
+        interviewUrl,
+        roleType: (appForEmail?.headline as string) || roleType || "Engineer",
+        expiresAt,
+      });
+      await sendEmail({ to: email, ...tmpl });
+    } else {
+      // Fallback to the standard technical pass email
+      const tmpl = technicalPassEmail({
+        firstName,
+        ctaHref: `${origin}/talent/dashboard`,
+      });
+      await sendEmail({ to: email, ...tmpl });
+    }
   }
 
   await createNotification({
     userId: parsed.data.user_id,
     kind: "review_decision",
     title: "You passed the technical assessment",
-    body: "Great news — you've cleared the technical stage. Next up is the senior-engineer interview.",
+    body: interviewUrl
+      ? "Great news — you've cleared the technical stage. Your AI interview link has been sent to your email."
+      : "Great news — you've cleared the technical stage. Next up is the senior-engineer interview.",
     refTable: "talent_applications",
   });
 
   revalidatePath("/admin");
   revalidatePath(`/admin/talent/${parsed.data.user_id}`);
   revalidatePath("/", "layout");
-  return { ok: true, message: "Technical assessment marked passed." };
+  return { ok: true, message: interviewUrl
+    ? "Technical assessment passed — Velscreen AI interview session created and email sent."
+    : "Technical assessment marked passed." };
 }
 
 export async function failTechnical(

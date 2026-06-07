@@ -96,7 +96,7 @@ const SubmitSchema = z.object({
   // Step 5 — required
   hiring_urgency: z.enum(urgencyIds),
   hiring_volume: z.enum(volumeIds),
-  salary_range: z.enum(salaryIds),
+  salary_range: z.string().trim().min(2, "Pick your salary range."),
   hiring_method: z.enum(methodIds),
 
   // Step 6 — required

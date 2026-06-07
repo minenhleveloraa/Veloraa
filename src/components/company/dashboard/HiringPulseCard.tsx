@@ -81,7 +81,7 @@ export default function HiringPulseCard({
   const isQuiet = total === 0;
 
   return (
-    <section className="relative overflow-hidden rounded-3xl border border-edge bg-surface p-5 shadow-[0_30px_60px_-30px_rgba(0,0,0,0.25)] sm:p-7">
+    <section className="relative overflow-hidden rounded-2xl border border-edge bg-surface p-4 transition-all duration-300 hover:border-accent/25 hover:shadow-[0_24px_60px_-42px_rgba(10,46,26,0.3)] sm:rounded-3xl sm:p-6">
       {/* Decorative corner glow */}
       <span
         aria-hidden

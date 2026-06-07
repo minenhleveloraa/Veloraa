@@ -10,7 +10,6 @@ import { requireApprovedCompany } from "@/lib/company/guard";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { CompanyJob, JobStatus } from "@/lib/types/db";
-import { labelFor, SALARY_RANGES } from "@/lib/company/options";
 import RecommendedTalentSection from "@/components/company/RecommendedTalentSection";
 
 export default async function CompanyJobDetailPage({
@@ -177,7 +176,7 @@ export default async function CompanyJobDetailPage({
             {job.salary_range && (
               <>
                 <span>·</span>
-                <span>{labelFor(SALARY_RANGES, job.salary_range)}</span>
+                <span>{job.salary_range}</span>
               </>
             )}
           </div>

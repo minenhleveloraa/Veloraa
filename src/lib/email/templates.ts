@@ -930,3 +930,74 @@ Open dashboard: ${manageHref}
     text,
   };
 }
+
+// ---------------------------------------------------------------------
+// Velscreen AI interview — sent to talent after technical pass
+// ---------------------------------------------------------------------
+
+export function velscreenInterviewEmail({
+  firstName,
+  interviewUrl,
+  roleType,
+  expiresAt,
+}: {
+  firstName: string;
+  interviewUrl: string;
+  roleType: string;
+  expiresAt: string;
+}) {
+  const greet = firstName ? `Hi ${firstName},` : "Hi,";
+  const expiryDate = new Date(expiresAt).toLocaleDateString(undefined, {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+
+  const html = shell({
+    preheader:
+      "You're through to the AI interview stage — complete it in your own time.",
+    title: "Your Velscreen AI Interview is Ready",
+    body: `
+      <p>${greet}</p>
+      <p>Congratulations on passing the technical assessment! The next step
+      in your Veloraa journey is a conversational interview conducted by
+      <strong>Velscreen</strong>, our specialized AI interviewer.</p>
+      <p>Velscreen will walk you through a structured dialogue covering
+      your technical experience, problem-solving approach, and professional
+      growth areas — all tailored specifically to your background as a
+      <strong>${roleType}</strong>.</p>
+      <p style="background:#F0FDF4;border-left:3px solid #4ADE80;padding:12px 14px;border-radius:6px;margin:20px 0">
+        <strong style="display:block;font-size:12px;letter-spacing:1px;text-transform:uppercase;color:#166534;margin-bottom:6px">What to expect</strong>
+        • 10 adaptive questions tailored to your resume<br/>
+        • ~25–35 minutes to complete<br/>
+        • Take it anytime before <strong>${expiryDate}</strong><br/>
+        • One continuous session — no pausing or restarting
+      </p>
+      <p>Click below to begin when you're ready. Find a quiet spot, grab a
+      coffee, and give it your full focus.</p>
+    `,
+    ctaHref: interviewUrl,
+    ctaLabel: "Start my AI interview",
+  });
+
+  const text = `${greet}
+
+Congratulations on passing the technical assessment! Your next step is
+a Velscreen AI interview — a 25-35 minute conversational assessment
+tailored to your ${roleType} background.
+
+Start your interview: ${interviewUrl}
+
+This link expires on ${expiryDate}. Once started, you cannot pause.
+
+— The Veloraa team`;
+
+  return {
+    subject: "Your Velscreen AI interview is ready",
+    html,
+    text,
+  };
+}

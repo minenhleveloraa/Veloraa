@@ -3,7 +3,7 @@ import { ChevronRight, Sparkles } from "lucide-react";
 
 export default function TalentUpgradeCard() {
   return (
-    <section className="group relative overflow-hidden rounded-2xl border border-edge bg-page-alt p-4 transition-all duration-300 hover:border-accent/25 sm:rounded-3xl sm:p-6">
+    <section className="group relative overflow-hidden rounded-2xl border border-edge bg-page-alt p-4 transition-all duration-300 hover:border-accent/25 hover:shadow-[0_24px_60px_-42px_rgba(10,46,26,0.3)] sm:rounded-3xl sm:p-6 max-h-[22rem] sm:max-h-none">
       {/* Layered radial glows */}
       <div aria-hidden className="pointer-events-none absolute inset-0" style={{
         background: "radial-gradient(120% 60% at 100% 0%, rgba(74,222,128,0.18), transparent 65%), radial-gradient(80% 50% at 0% 100%, rgba(22,163,74,0.12), transparent 70%)",

@@ -53,7 +53,7 @@ export default function JobsFeed({ jobs }: JobsFeedProps) {
   );
 
   return (
-    <section className="relative flex h-full flex-col overflow-hidden rounded-3xl border border-edge bg-surface p-5 shadow-[0_30px_60px_-30px_rgba(0,0,0,0.25)] sm:p-6">
+    <section className="relative flex h-full flex-col overflow-hidden rounded-2xl border border-edge bg-surface p-4 transition-all duration-300 hover:border-accent/25 hover:shadow-[0_24px_60px_-42px_rgba(10,46,26,0.3)] sm:rounded-3xl sm:p-6">
       <header className="flex items-start justify-between gap-3">
         <div>
           <h2 className="text-lg font-bold text-heading sm:text-xl font-raleway">

@@ -1,6 +1,8 @@
 "use server";
 
 import OpenAI from "openai";
+import { createRequire } from "node:module";
+import { pathToFileURL } from "node:url";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import type {
@@ -10,6 +12,11 @@ import type {
   SkillScore,
   TalentApplication,
 } from "@/lib/types/db";
+
+const RESUME_DOWNLOAD_TIMEOUT_MS = 20_000;
+const PDF_PARSE_TIMEOUT_MS = 30_000;
+const OPENAI_TIMEOUT_MS = 60_000;
+const require = createRequire(import.meta.url);
 
 // ---------------------------------------------------------------------
 // Result shape we expect from the model (JSON schema enforced below).
@@ -137,7 +144,7 @@ export async function runAiAnalysis(options?: {
   }
 
   // Mark as pending so clients can poll.
-  await supabase
+  const { error: pendingErr } = await supabase
     .from("talent_ai_analyses")
     .upsert(
       {
@@ -147,43 +154,18 @@ export async function runAiAnalysis(options?: {
       },
       { onConflict: "user_id" }
     );
+  if (pendingErr) {
+    return { ok: false, message: pendingErr.message };
+  }
 
   try {
     // --------------------------------------------------------------
     // 1) Pull resume text (PDF → text via pdf-parse).
     // --------------------------------------------------------------
-    let resumeText = "";
-    if (app.resume_path) {
-      const { data: file } = await supabase.storage
-        .from("resumes")
-        .download(app.resume_path);
-      if (file) {
-        const buf = Buffer.from(await file.arrayBuffer());
-        const lower = app.resume_path.toLowerCase();
-        if (lower.endsWith(".pdf")) {
-          try {
-            // Use the inner entry point — the top-level `pdf-parse` runs a
-            // self-test at import time that crashes in serverless envs.
-            const mod = (await import(
-              /* webpackIgnore: true */ "pdf-parse/lib/pdf-parse.js" as string
-            )) as { default?: unknown };
-            const parser = mod.default ?? mod;
-            const parseFn = parser as (b: Buffer) => Promise<{ text: string }>;
-            const parsed = await parseFn(buf);
-            resumeText = parsed.text ?? "";
-          } catch (e) {
-            resumeText = `[Could not parse PDF: ${
-              e instanceof Error ? e.message : "unknown"
-            }]`;
-          }
-        } else {
-          resumeText = "[Non-PDF resume uploaded — text extraction skipped.]";
-        }
-      }
-    }
-
-    // Clip to a generous-but-bounded size to keep costs predictable.
-    resumeText = resumeText.slice(0, 20000);
+    const resumeText = (await extractResumeText(supabase, app.resume_path)).slice(
+      0,
+      20000
+    );
 
     // --------------------------------------------------------------
     // 2) Call OpenAI — or fall back to a deterministic demo result
@@ -205,22 +187,26 @@ export async function runAiAnalysis(options?: {
       const openai = new OpenAI({ apiKey });
       const { systemPrompt, userPrompt } = buildPrompt(app, resumeText);
 
-      const resp = await openai.chat.completions.create({
-        model,
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userPrompt },
-        ],
-        response_format: {
-          type: "json_schema",
-          json_schema: {
-            name: "talent_analysis",
-            strict: true,
-            schema: ANALYSIS_JSON_SCHEMA,
+      const resp = await withTimeout(
+        openai.chat.completions.create({
+          model,
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userPrompt },
+          ],
+          response_format: {
+            type: "json_schema",
+            json_schema: {
+              name: "talent_analysis",
+              strict: true,
+              schema: ANALYSIS_JSON_SCHEMA,
+            },
           },
-        },
-        temperature: 0.3,
-      });
+          temperature: 0.3,
+        }),
+        OPENAI_TIMEOUT_MS,
+        "AI analysis"
+      );
 
       const content = resp.choices[0]?.message?.content ?? "";
       if (!content) throw new Error("Empty response from model.");
@@ -272,6 +258,94 @@ export async function runAiAnalysis(options?: {
       );
     return { ok: false, message };
   }
+}
+
+// ---------------------------------------------------------------------
+// Resume extraction
+// ---------------------------------------------------------------------
+
+async function extractResumeText(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  resumePath: string | null
+) {
+  if (!resumePath) {
+    throw new Error("No resume file is attached to this application.");
+  }
+
+  const { data: file, error } = await withTimeout(
+    supabase.storage.from("resumes").download(resumePath),
+    RESUME_DOWNLOAD_TIMEOUT_MS,
+    "Resume download"
+  );
+
+  if (error) {
+    throw new Error(`Could not download resume: ${error.message}`);
+  }
+  if (!file) {
+    throw new Error("Could not download resume: file was empty.");
+  }
+
+  const lower = resumePath.toLowerCase();
+  if (!lower.endsWith(".pdf")) {
+    return "[Non-PDF resume uploaded - text extraction skipped.]";
+  }
+
+  const buf = Buffer.from(
+    await withTimeout(
+      file.arrayBuffer(),
+      RESUME_DOWNLOAD_TIMEOUT_MS,
+      "Resume file read"
+    )
+  );
+
+  try {
+    const { PDFParse } = await import("pdf-parse");
+    PDFParse.setWorker(
+      pathToFileURL(
+        require.resolve("pdfjs-dist/legacy/build/pdf.worker.mjs")
+      ).href
+    );
+    const parser = new PDFParse({ data: buf });
+
+    try {
+      const parsed = await withTimeout(
+        parser.getText(),
+        PDF_PARSE_TIMEOUT_MS,
+        "Resume PDF parsing"
+      );
+
+      const text = parsed.text?.trim() ?? "";
+      if (!text) {
+        return "[PDF parsed successfully, but no selectable text was found.]";
+      }
+
+      return text;
+    } finally {
+      await parser.destroy().catch(() => undefined);
+    }
+  } catch (e) {
+    const message = e instanceof Error ? e.message : "unknown error";
+    throw new Error(`Could not parse resume PDF: ${message}`);
+  }
+}
+
+function withTimeout<T>(
+  promise: Promise<T>,
+  timeoutMs: number,
+  label: string
+): Promise<T> {
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    timeoutId = setTimeout(() => {
+      reject(
+        new Error(`${label} timed out after ${Math.round(timeoutMs / 1000)}s.`)
+      );
+    }, timeoutMs);
+  });
+
+  return Promise.race([promise, timeout]).finally(() => {
+    if (timeoutId) clearTimeout(timeoutId);
+  });
 }
 
 // ---------------------------------------------------------------------

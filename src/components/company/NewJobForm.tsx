@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   AlertTriangle,
@@ -18,7 +18,8 @@ import {
   X,
 } from "lucide-react";
 import Link from "next/link";
-import { ROLE_CATEGORIES, SALARY_RANGES } from "@/lib/company/options";
+import { ROLE_CATEGORIES, SALARY_OPTIONS, CURRENCIES, FREQUENCIES } from "@/lib/company/options";
+import type { Currency, Frequency } from "@/lib/company/options";
 import { submitJobForReview } from "@/app/actions/job-posting";
 import type { JobSubmitState } from "@/app/actions/job-posting";
 
@@ -74,6 +75,39 @@ export default function NewJobForm({
   const [skills, setSkills] = useState<string[]>([]);
   const [skillInput, setSkillInput] = useState("");
   const [benefits, setBenefits] = useState("");
+
+  // Compensation state — mirrors onboarding wizard UX
+  const [currency, setCurrency] = useState<Currency>(() => {
+    const raw = salaryRange;
+    if (!raw) return "USD";
+    if (raw.startsWith("R") || raw.includes("R ") || raw.includes("ZAR")) return "ZAR";
+    if (raw.startsWith("€") || raw.includes("EUR")) return "EUR";
+    if (raw.startsWith("£") || raw.includes("GBP")) return "GBP";
+    return "USD";
+  });
+  const [frequency, setFrequency] = useState<Frequency>(() => {
+    const raw = salaryRange;
+    if (!raw) return "Yearly";
+    if (raw.toLowerCase().includes("month")) return "Monthly";
+    if (raw.toLowerCase().includes("hr") || raw.toLowerCase().includes("hour")) return "Hourly";
+    return "Yearly";
+  });
+
+  // Migrate old short-key salary values to new descriptive format
+  useEffect(() => {
+    const OLD_KEYS = ["lt-60", "60-100", "100-150", "150-200", "gt-200", "varies"];
+    if (salaryRange && OLD_KEYS.includes(salaryRange)) {
+      const MAP: Record<string, string> = {
+        "lt-60": "Under $60K / year",
+        "60-100": "$60K – $100K / year",
+        "100-150": "$100K – $150K / year",
+        "150-200": "$150K – $200K / year",
+        "gt-200": "$200K+ / year",
+        "varies": "Varies widely",
+      };
+      setSalaryRange(MAP[salaryRange]);
+    }
+  }, [salaryRange]);
 
   const [isPending, startTransition] = useTransition();
   const [submitState, setSubmitState] = useState<JobSubmitState | null>(null);
@@ -373,18 +407,92 @@ export default function NewJobForm({
         title="Compensation"
         subtitle="Posting a salary band lifts reply rates by ~2×."
       >
-        <Field label="Salary range (USD / year)">
-          <div className="grid gap-2 sm:grid-cols-3">
-            {SALARY_RANGES.map((s) => (
-              <RadioCard
-                key={s.id}
-                checked={salaryRange === s.id}
-                onChange={() => setSalaryRange(s.id)}
-                label={s.label}
-              />
-            ))}
+        <div className="space-y-4 rounded-xl border border-edge bg-surface/50 p-5 shadow-glow-soft">
+          <div className="flex flex-col gap-1">
+            <span className="text-sm font-semibold text-heading font-raleway">
+              Salary range
+            </span>
+            <span className="text-xs text-subtle font-libre italic">
+              Configure currency and payment terms to view calibrated salary options.
+            </span>
           </div>
-        </Field>
+
+          {/* Currency & Frequency selection row */}
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <span className="block text-[10px] text-subtle font-jetbrains mb-1.5 uppercase tracking-wider">
+                Select Currency
+              </span>
+              <div className="flex rounded-lg bg-pill-bg p-0.5 border border-edge">
+                {CURRENCIES.map((curr) => {
+                  const isSelected = currency === curr;
+                  return (
+                    <button
+                      key={curr}
+                      type="button"
+                      onClick={() => {
+                        setCurrency(curr);
+                        setSalaryRange("");
+                      }}
+                      className={`flex-1 rounded-md py-1.5 text-center text-xs font-semibold transition-all font-raleway ${
+                        isSelected
+                          ? "bg-accent text-white shadow-sm border border-accent/15"
+                          : "text-body hover:text-heading"
+                      }`}
+                    >
+                      {curr === "ZAR" ? "ZAR (R)" : curr === "USD" ? "USD ($)" : curr === "EUR" ? "EUR (€)" : "GBP (£)"}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div>
+              <span className="block text-[10px] text-subtle font-jetbrains mb-1.5 uppercase tracking-wider">
+                Payment Terms
+              </span>
+              <div className="flex rounded-lg bg-pill-bg p-0.5 border border-edge">
+                {FREQUENCIES.map((freq) => {
+                  const isSelected = frequency === freq;
+                  return (
+                    <button
+                      key={freq}
+                      type="button"
+                      onClick={() => {
+                        setFrequency(freq);
+                        setSalaryRange("");
+                      }}
+                      className={`flex-1 rounded-md py-1.5 text-center text-xs font-semibold transition-all font-raleway ${
+                        isSelected
+                          ? "bg-accent text-white shadow-sm border border-accent/15"
+                          : "text-body hover:text-heading"
+                      }`}
+                    >
+                      {freq}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          {/* Dynamic Salary Cards grid */}
+          <div>
+            <span className="block text-[10px] text-subtle font-jetbrains mb-2.5 uppercase tracking-wider">
+              Calibrated Ranges
+            </span>
+            <div className="grid gap-2 sm:grid-cols-3">
+              {SALARY_OPTIONS[currency][frequency].map((option) => (
+                <RadioCard
+                  key={option.id}
+                  checked={salaryRange === option.id}
+                  onChange={() => setSalaryRange(option.id)}
+                  label={option.label}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
 
         <Field label="Benefits, equity, perks" hint="Optional, short list">
           <textarea

@@ -1,6 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  startTransition,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -15,6 +21,7 @@ import {
 import { runAiAnalysis } from "@/app/actions/ai-analysis";
 
 const EASE_OUT: [number, number, number, number] = [0.25, 0.1, 0.25, 1];
+const ACTION_TIMEOUT_MS = 150_000;
 
 const STEPS = [
   {
@@ -77,7 +84,20 @@ export default function AiAnalysisRunner({
       setActiveStep((i) => (i < STEPS.length - 1 ? i + 1 : i));
     }, 2400);
 
-    const res = await runAiAnalysis();
+    let res: Awaited<ReturnType<typeof runAiAnalysis>>;
+    try {
+      res = await withClientTimeout(
+        runAiAnalysis(),
+        ACTION_TIMEOUT_MS,
+        "AI analysis"
+      );
+    } catch (e) {
+      stopTimer();
+      setRunning(false);
+      setError(e instanceof Error ? e.message : "Something went wrong.");
+      return;
+    }
+
     stopTimer();
 
     if (!res.ok) {
@@ -100,7 +120,9 @@ export default function AiAnalysisRunner({
     if (initialError) return;
     startedRef.current = true;
     const timeoutId = window.setTimeout(() => {
-      void start();
+      startTransition(() => {
+        void start();
+      });
     }, 0);
 
     return () => window.clearTimeout(timeoutId);
@@ -127,7 +149,9 @@ export default function AiAnalysisRunner({
           type="button"
           onClick={() => {
             setError(null);
-            void start();
+            startTransition(() => {
+              void start();
+            });
           }}
           className="mt-6 inline-flex items-center gap-2 rounded-lg bg-btn-bg px-6 py-2.5 text-sm font-semibold text-btn-fg transition-opacity hover:opacity-90 font-raleway"
         >
@@ -269,4 +293,23 @@ function PulseOrb({ completed }: { completed: boolean }) {
       </span>
     </div>
   );
+}
+
+function withClientTimeout<T>(
+  promise: Promise<T>,
+  timeoutMs: number,
+  label: string
+): Promise<T> {
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    timeoutId = setTimeout(() => {
+      reject(
+        new Error(`${label} timed out after ${Math.round(timeoutMs / 1000)}s.`)
+      );
+    }, timeoutMs);
+  });
+
+  return Promise.race([promise, timeout]).finally(() => {
+    if (timeoutId) clearTimeout(timeoutId);
+  });
 }

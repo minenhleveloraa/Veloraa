@@ -18,6 +18,7 @@ import {
   Check,
   Clock,
   ImagePlus,
+  Info,
   Loader2,
   Sparkles,
   Trash2,
@@ -45,9 +46,10 @@ import {
   INDUSTRIES,
   PLANS,
   ROLE_CATEGORIES,
-  SALARY_RANGES,
+  SALARY_OPTIONS,
   WORK_STYLES,
 } from "@/lib/company/options";
+import type { Currency, Frequency } from "@/lib/company/options";
 import type { CompanyApplication } from "@/lib/types/db";
 
 const EASE_OUT: [number, number, number, number] = [0.25, 0.1, 0.25, 1];
@@ -557,6 +559,7 @@ function StepBasics({
               checked={values.company_stage === s.id}
               onChange={() => setField("company_stage", s.id)}
               label={s.label}
+              tooltip={{ description: s.description, example: s.example }}
             />
           ))}
         </div>
@@ -737,6 +740,8 @@ function StepWorkStyle({
 // STEP 5 — Hiring situation
 // ---------------------------------------------------------------------
 
+
+
 function StepHiring({
   values,
   setField,
@@ -744,6 +749,40 @@ function StepHiring({
   values: WizardValues;
   setField: <K extends keyof WizardValues>(k: K, v: WizardValues[K]) => void;
 }) {
+  // Local state for interactive choices, prefilled from `values.salary_range`
+  const [currency, setCurrency] = useState<Currency>(() => {
+    const raw = values.salary_range;
+    if (!raw) return "USD";
+    if (raw.startsWith("R") || raw.includes("R ") || raw.includes("ZAR")) return "ZAR";
+    if (raw.startsWith("€") || raw.includes("EUR")) return "EUR";
+    if (raw.startsWith("£") || raw.includes("GBP")) return "GBP";
+    return "USD";
+  });
+
+  const [frequency, setFrequency] = useState<Frequency>(() => {
+    const raw = values.salary_range;
+    if (!raw) return "Yearly";
+    if (raw.toLowerCase().includes("month")) return "Monthly";
+    if (raw.toLowerCase().includes("hr") || raw.toLowerCase().includes("hour")) return "Hourly";
+    return "Yearly";
+  });
+
+  // Synchronize old keys to new full strings if they exist
+  useEffect(() => {
+    const raw = values.salary_range;
+    if (raw && ["lt-60", "60-100", "100-150", "150-200", "gt-200", "varies"].includes(raw)) {
+      const OLD_SALARY_MAP: Record<string, string> = {
+        "lt-60": "Under $60K / year",
+        "60-100": "$60K – $100K / year",
+        "100-150": "$100K – $150K / year",
+        "150-200": "$150K – $200K / year",
+        "gt-200": "$200K+ / year",
+        "varies": "Varies widely",
+      };
+      setField("salary_range", OLD_SALARY_MAP[raw]);
+    }
+  }, [values.salary_range, setField]);
+
   return (
     <div className="space-y-8">
       <Field label="How urgently are you looking to hire?">
@@ -772,18 +811,92 @@ function StepHiring({
         </div>
       </Field>
 
-      <Field label="Typical salary range (USD / year)">
-        <div className="grid gap-2 sm:grid-cols-3">
-          {SALARY_RANGES.map((s) => (
-            <RadioCard
-              key={s.id}
-              checked={values.salary_range === s.id}
-              onChange={() => setField("salary_range", s.id)}
-              label={s.label}
-            />
-          ))}
+      <div className="space-y-4 rounded-xl border border-edge bg-surface/50 p-5 shadow-glow-soft">
+        <div className="flex flex-col gap-1">
+          <span className="text-sm font-semibold text-heading font-raleway">
+            Typical salary range
+          </span>
+          <span className="text-xs text-subtle font-libre italic">
+            Configure currency and payment terms to view calibrated salary options.
+          </span>
         </div>
-      </Field>
+
+        {/* Currency & Frequency selection row */}
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <span className="block text-[10px] text-subtle font-jetbrains mb-1.5 uppercase tracking-wider">
+              Select Currency
+            </span>
+            <div className="flex rounded-lg bg-pill-bg p-0.5 border border-edge">
+              {(["ZAR", "USD", "EUR", "GBP"] as const).map((curr) => {
+                const isSelected = currency === curr;
+                return (
+                  <button
+                    key={curr}
+                    type="button"
+                    onClick={() => {
+                      setCurrency(curr);
+                      setField("salary_range", ""); // Clear value to force selection
+                    }}
+                    className={`flex-1 rounded-md py-1.5 text-center text-xs font-semibold transition-all font-raleway ${
+                      isSelected
+                        ? "bg-accent text-btn-fg shadow-sm border border-accent/15"
+                        : "text-body hover:text-heading"
+                    }`}
+                  >
+                    {curr === "ZAR" ? "ZAR (R)" : curr === "USD" ? "USD ($)" : curr === "EUR" ? "EUR (€)" : "GBP (£)"}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div>
+            <span className="block text-[10px] text-subtle font-jetbrains mb-1.5 uppercase tracking-wider">
+              Payment Terms
+            </span>
+            <div className="flex rounded-lg bg-pill-bg p-0.5 border border-edge">
+              {(["Yearly", "Monthly", "Hourly"] as const).map((freq) => {
+                const isSelected = frequency === freq;
+                return (
+                  <button
+                    key={freq}
+                    type="button"
+                    onClick={() => {
+                      setFrequency(freq);
+                      setField("salary_range", ""); // Clear value to force selection
+                    }}
+                    className={`flex-1 rounded-md py-1.5 text-center text-xs font-semibold transition-all font-raleway ${
+                      isSelected
+                        ? "bg-accent text-btn-fg shadow-sm border border-accent/15"
+                        : "text-body hover:text-heading"
+                    }`}
+                  >
+                    {freq}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        {/* Dynamic Salary Cards grid */}
+        <div>
+          <span className="block text-[10px] text-subtle font-jetbrains mb-2.5 uppercase tracking-wider">
+            Calibrated Ranges
+          </span>
+          <div className="grid gap-2 sm:grid-cols-3">
+            {SALARY_OPTIONS[currency][frequency].map((option) => (
+              <RadioCard
+                key={option.id}
+                checked={values.salary_range === option.id}
+                onChange={() => setField("salary_range", option.id)}
+                label={option.label}
+              />
+            ))}
+          </div>
+        </div>
+      </div>
 
       <Field label="How do you currently hire technical talent?">
         <div className="space-y-2">
@@ -1014,34 +1127,116 @@ function Field({
   );
 }
 
+interface TooltipContent {
+  description: string;
+  example: string;
+}
+
 function RadioCard({
   checked,
   onChange,
   label,
   sub,
+  tooltip,
 }: {
   checked: boolean;
   onChange: () => void;
   label: string;
   sub?: string;
+  tooltip?: TooltipContent;
 }) {
-  return (
-    <button
-      type="button"
-      onClick={onChange}
-      className={`flex flex-col items-start gap-0.5 rounded-xl border px-4 py-3 text-left transition-all ${
-        checked
-          ? "border-accent bg-accent/5 shadow-[0_0_0_1px_rgba(74,222,128,0.4)]"
-          : "border-edge bg-surface hover:border-accent/40"
-      }`}
-    >
-      <span className="text-sm font-semibold text-heading font-raleway">
-        {label}
-      </span>
-      {sub && (
-        <span className="text-[11px] text-subtle font-jetbrains">{sub}</span>
+  const [showTooltip, setShowTooltip] = useState(false);
+  const tooltipRef = useRef<HTMLDivElement | null>(null);
+
+  // Close tooltip when clicking outside
+  useEffect(() => {
+    if (!showTooltip) return;
+    const handleOutsideClick = (e: MouseEvent) => {
+      if (tooltipRef.current && !tooltipRef.current.contains(e.target as Node)) {
+        setShowTooltip(false);
+      }
+    };
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => document.removeEventListener("mousedown", handleOutsideClick);
+  }, [showTooltip]);
+
+  const cardContent = (
+    <>
+      <div className="flex flex-col items-start gap-0.5 pr-4">
+        <span className="text-sm font-semibold text-heading font-raleway">
+          {label}
+        </span>
+        {sub && (
+          <span className="text-[11px] text-subtle font-jetbrains">{sub}</span>
+        )}
+      </div>
+
+      {tooltip && (
+        <div 
+          ref={tooltipRef}
+          className="absolute right-3 top-3 z-10"
+        >
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowTooltip((prev) => !prev);
+            }}
+            onMouseEnter={() => setShowTooltip(true)}
+            onMouseLeave={() => setShowTooltip(false)}
+            className="flex h-5 w-5 items-center justify-center rounded-full bg-pill-bg text-subtle transition-colors hover:bg-accent/15 hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+            aria-label={`More information about ${label}`}
+          >
+            <Info className="h-3.5 w-3.5" />
+          </button>
+
+          <AnimatePresence>
+            {showTooltip && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 8 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 8 }}
+                transition={{ duration: 0.15, ease: "easeOut" }}
+                className="absolute right-0 bottom-full mb-2 w-72 rounded-xl border border-edge bg-surface p-4 shadow-xl pointer-events-none"
+              >
+                {/* Arrow */}
+                <div className="absolute right-3 top-full h-2 w-2 -translate-y-1 rotate-45 border-b border-r border-edge bg-surface" />
+                
+                <p className="text-xs font-medium text-heading leading-relaxed font-raleway">
+                  {tooltip.description}
+                </p>
+                <div className="mt-2.5 border-l-2 border-accent bg-accent/5 pl-2.5 py-1 text-[11px] font-medium italic text-accent font-raleway rounded-r-md">
+                  {tooltip.example}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
       )}
-    </button>
+    </>
+  );
+
+  const containerCls = `relative flex w-full flex-col justify-center rounded-xl border px-4 py-3 text-left transition-all cursor-pointer select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-page ${
+    checked
+      ? "border-accent bg-accent/5 shadow-[0_0_0_1px_rgba(74,222,128,0.4)]"
+      : "border-edge bg-surface hover:border-accent/40"
+  }`;
+
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={onChange}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onChange();
+        }
+      }}
+      className={containerCls}
+    >
+      {cardContent}
+    </div>
   );
 }
 
