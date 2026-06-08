@@ -15,8 +15,13 @@ export const revalidate = 0;
  * the Veloraa team. Company↔candidate threads open lazily once the company
  * messages a candidate.
  */
-export default async function CompanyMessagesPage() {
+export default async function CompanyMessagesPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ thread?: string }>;
+}) {
   const { profile, application } = await requireApprovedCompany();
+  const initialThreadId = (await searchParams)?.thread;
 
   const companyName = application?.legal_name ?? profile.full_name ?? "Company";
   const viewerInitials = (
@@ -50,6 +55,7 @@ export default async function CompanyMessagesPage() {
         viewerName={companyName}
         viewerInitials={viewerInitials}
         companyJobs={companyJobs}
+        initialThreadId={initialThreadId}
       />
     </div>
   );

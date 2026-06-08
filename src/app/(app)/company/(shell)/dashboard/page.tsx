@@ -149,6 +149,39 @@ export default async function CompanyDashboardPage() {
 
     // ── Fetch recommended talent (admin picks) ──────────────────────
     const admin = createAdminClient();
+    if (recentJobs.length > 0) {
+      const { data: applicationRows } = await admin
+        .from("job_applications")
+        .select("job_id, status")
+        .eq("company_user_id", userId)
+        .in(
+          "job_id",
+          recentJobs.map((job) => job.id)
+        );
+      const counts = new Map<
+        string,
+        { pendingApplications: number; totalApplications: number }
+      >();
+
+      for (const row of (applicationRows ?? []) as {
+        job_id: string;
+        status: string;
+      }[]) {
+        const current = counts.get(row.job_id) ?? {
+          pendingApplications: 0,
+          totalApplications: 0,
+        };
+        current.totalApplications += 1;
+        if (row.status === "pending") current.pendingApplications += 1;
+        counts.set(row.job_id, current);
+      }
+
+      recentJobs = recentJobs.map((job) => ({
+        ...job,
+        pendingApplications: counts.get(job.id)?.pendingApplications ?? 0,
+        totalApplications: counts.get(job.id)?.totalApplications ?? 0,
+      }));
+    }
     // Get published job IDs for this company
     const { data: publishedJobs } = await admin
       .from("company_jobs")
@@ -825,13 +858,17 @@ function ApprovedDashboard({
 
 function SuggestedTalent({ talents }: { talents: SuggestedTalentItem[] }) {
   return (
-    <section className="relative flex flex-col overflow-hidden rounded-2xl border border-edge bg-surface p-4 transition-all duration-300 hover:border-accent/25 hover:shadow-[0_24px_60px_-42px_rgba(10,46,26,0.3)] sm:rounded-3xl sm:p-6 max-h-[22rem] sm:max-h-none">
+    <section className="relative flex max-h-[22rem] flex-col overflow-hidden rounded-2xl border border-accent/35 bg-accent/5 p-4 shadow-[0_24px_60px_-46px_rgba(22,163,74,0.55)] transition-all duration-300 hover:border-accent/45 dark:border-accent/25 dark:bg-accent/8 sm:max-h-none sm:rounded-3xl sm:p-6">
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-accent" />
       <header className="flex items-start justify-between">
         <div>
-          <h3 className="text-sm font-bold text-heading sm:text-base font-raleway">
+          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-accent font-jetbrains">
+            Veloraa recommended
+          </p>
+          <h3 className="mt-1 text-lg font-bold tracking-tight text-heading sm:text-xl font-raleway">
             Suggested talent
           </h3>
-          <p className="mt-0.5 text-[11px] text-subtle font-jetbrains">
+          <p className="mt-0.5 text-[11px] text-accent/80 font-jetbrains">
             Hand-picked by Veloraa
           </p>
         </div>
@@ -861,7 +898,7 @@ function SuggestedTalent({ talents }: { talents: SuggestedTalentItem[] }) {
           {talents.map((t) => (
             <li
               key={`${t.userId}-${t.jobId}`}
-              className="group flex items-center gap-3 rounded-2xl border border-edge bg-page-alt p-2.5 transition-colors hover:border-accent/30"
+              className="group flex items-center gap-3 rounded-2xl border border-accent/20 bg-surface p-2.5 transition-colors hover:border-accent/45 dark:bg-page-alt"
             >
               <span
                 aria-hidden

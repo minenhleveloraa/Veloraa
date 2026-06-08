@@ -5,6 +5,7 @@ import MessagingPanelLive from "@/components/messaging/MessagingPanelLive";
 import type { CompanyJobOption } from "@/components/messaging/MessagingPanel";
 import type { Thread } from "@/components/messaging/types";
 import { sendInterviewInvite } from "@/app/actions/interview-invitations";
+import { updateJobApplicationStatus } from "@/app/actions/job-applications";
 
 interface Props {
   threads: Thread[];
@@ -40,6 +41,22 @@ export default function CompanyMessagesClient({
     []
   );
 
+  const handleUpdateJobApplication = useCallback(
+    async (
+      applicationId: string,
+      status: "accepted" | "declined",
+      note?: string
+    ) => {
+      const result = await updateJobApplicationStatus({
+        applicationId,
+        status,
+        note,
+      });
+      return result;
+    },
+    []
+  );
+
   return (
     <MessagingPanelLive
       initialThreads={threads}
@@ -51,6 +68,7 @@ export default function CompanyMessagesClient({
       viewerRole="company"
       companyJobs={companyJobs}
       onScheduleInterview={handleScheduleInterview}
+      onUpdateJobApplication={handleUpdateJobApplication}
       emptyThreadCopy={{
         title: "Pick a conversation",
         body: "Start with the Veloraa team on the left — they'll help you get the most out of the platform.",

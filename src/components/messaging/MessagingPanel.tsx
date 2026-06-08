@@ -8,11 +8,15 @@ import {
   useRef,
   useState,
 } from "react";
+import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   ArrowLeft,
+  Briefcase,
   CalendarClock,
   CheckCheck,
+  ExternalLink,
+  MapPin,
   MessageSquare,
   MoreVertical,
   Paperclip,
@@ -89,6 +93,13 @@ export interface MessagingPanelProps {
   onDeclineInterview?: (
     invitationId: string,
     reason?: string
+  ) => Promise<{ ok: boolean; message?: string }>;
+
+  // Job application response (company side)
+  onUpdateJobApplication?: (
+    applicationId: string,
+    status: "accepted" | "declined",
+    note?: string
   ) => Promise<{ ok: boolean; message?: string }>;
 }
 
@@ -211,6 +222,7 @@ export default function MessagingPanel({
   viewerRole,
   onAcceptInterview,
   onDeclineInterview,
+  onUpdateJobApplication,
 }: MessagingPanelProps) {
   const [selectedId, setSelectedId] = useState<string | null>(
     initialThreadId ?? null
@@ -343,6 +355,7 @@ export default function MessagingPanel({
             viewerRole={viewerRole}
             onAcceptInterview={onAcceptInterview}
             onDeclineInterview={onDeclineInterview}
+            onUpdateJobApplication={onUpdateJobApplication}
           />
         ) : (
           <EmptyThreadPane copy={emptyThreadCopy} />
@@ -512,6 +525,7 @@ function ThreadView({
   viewerRole,
   onAcceptInterview,
   onDeclineInterview,
+  onUpdateJobApplication,
 }: {
   thread: Thread;
   viewer: { name: string; initials: string };
@@ -524,6 +538,7 @@ function ThreadView({
   viewerRole?: "company" | "talent";
   onAcceptInterview?: MessagingPanelProps["onAcceptInterview"];
   onDeclineInterview?: MessagingPanelProps["onDeclineInterview"];
+  onUpdateJobApplication?: MessagingPanelProps["onUpdateJobApplication"];
 }) {
   return (
     <>
@@ -539,6 +554,7 @@ function ThreadView({
         viewerRole={viewerRole}
         onAcceptInterview={onAcceptInterview}
         onDeclineInterview={onDeclineInterview}
+        onUpdateJobApplication={onUpdateJobApplication}
       />
       <Composer
         thread={thread}
@@ -650,12 +666,14 @@ function MessageList({
   viewerRole,
   onAcceptInterview,
   onDeclineInterview,
+  onUpdateJobApplication,
 }: {
   thread: Thread;
   viewerInitials: string;
   viewerRole?: "company" | "talent";
   onAcceptInterview?: MessagingPanelProps["onAcceptInterview"];
   onDeclineInterview?: MessagingPanelProps["onDeclineInterview"];
+  onUpdateJobApplication?: MessagingPanelProps["onUpdateJobApplication"];
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -703,6 +721,7 @@ function MessageList({
                       viewerRole={viewerRole}
                       onAcceptInterview={onAcceptInterview}
                       onDeclineInterview={onDeclineInterview}
+                      onUpdateJobApplication={onUpdateJobApplication}
                     />
                   ))}
                 </div>
@@ -767,6 +786,7 @@ function MessageBubble({
   viewerRole,
   onAcceptInterview,
   onDeclineInterview,
+  onUpdateJobApplication,
 }: {
   message: Message;
   previous?: Message;
@@ -776,6 +796,7 @@ function MessageBubble({
   viewerRole?: "company" | "talent";
   onAcceptInterview?: MessagingPanelProps["onAcceptInterview"];
   onDeclineInterview?: MessagingPanelProps["onDeclineInterview"];
+  onUpdateJobApplication?: MessagingPanelProps["onUpdateJobApplication"];
 }) {
   if (message.system) {
     // Check if this is a structured interview card
@@ -788,6 +809,17 @@ function MessageBubble({
           viewerRole={viewerRole}
           onAcceptInterview={onAcceptInterview}
           onDeclineInterview={onDeclineInterview}
+        />
+      );
+    }
+    const applicationCard = parseJobApplicationCard(message.body);
+    if (applicationCard) {
+      return (
+        <JobApplicationCardBubble
+          card={applicationCard}
+          at={message.at}
+          viewerRole={viewerRole}
+          onUpdateJobApplication={onUpdateJobApplication}
         />
       );
     }
@@ -1413,6 +1445,258 @@ function parseInterviewCard(body: string): InterviewCard | null {
     // Not JSON — regular system message
   }
   return null;
+}
+
+interface JobApplicationCard {
+  type:
+    | "job_application"
+    | "job_application_accepted"
+    | "job_application_declined";
+  application_id?: string;
+  job_id?: string;
+  job_title: string;
+  company_name?: string | null;
+  talent_user_id?: string;
+  talent_name?: string | null;
+  headline?: string | null;
+  location?: string | null;
+  skills?: string[];
+  intro_note?: string | null;
+  status?: "pending" | "accepted" | "declined" | "withdrawn";
+  profile_href?: string | null;
+  note?: string | null;
+}
+
+function parseJobApplicationCard(body: string): JobApplicationCard | null {
+  try {
+    const parsed = JSON.parse(body);
+    if (
+      parsed &&
+      typeof parsed === "object" &&
+      typeof parsed.type === "string" &&
+      [
+        "job_application",
+        "job_application_accepted",
+        "job_application_declined",
+      ].includes(parsed.type) &&
+      typeof parsed.job_title === "string"
+    ) {
+      return parsed as JobApplicationCard;
+    }
+  } catch {
+    // Not JSON - regular system message.
+  }
+  return null;
+}
+
+function JobApplicationCardBubble({
+  card,
+  at,
+  viewerRole,
+  onUpdateJobApplication,
+}: {
+  card: JobApplicationCard;
+  at: string;
+  viewerRole?: "company" | "talent";
+  onUpdateJobApplication?: MessagingPanelProps["onUpdateJobApplication"];
+}) {
+  const initialDone =
+    card.type === "job_application_accepted" || card.status === "accepted"
+      ? "accepted"
+      : card.type === "job_application_declined" || card.status === "declined"
+      ? "declined"
+      : null;
+  const [actionDone, setActionDone] = useState<"accepted" | "declined" | null>(
+    initialDone
+  );
+  const [acting, setActing] = useState<"accepted" | "declined" | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const canAct =
+    viewerRole === "company" &&
+    card.type === "job_application" &&
+    !!card.application_id &&
+    !actionDone;
+
+  const isAccepted = actionDone === "accepted";
+  const isDeclined = actionDone === "declined";
+  const borderCls = isAccepted
+    ? "border-accent/30"
+    : isDeclined
+    ? "border-red-500/30"
+    : "border-accent/25";
+  const bgCls = isAccepted
+    ? "bg-accent/5"
+    : isDeclined
+    ? "bg-red-500/5"
+    : "bg-surface";
+
+  async function decide(status: "accepted" | "declined") {
+    if (!onUpdateJobApplication || !card.application_id) return;
+    setActing(status);
+    setError(null);
+    try {
+      const result = await onUpdateJobApplication(card.application_id, status);
+      if (result?.ok) {
+        setActionDone(status);
+      } else {
+        setError(result?.message ?? "Failed to update application.");
+      }
+    } catch {
+      setError("Something went wrong.");
+    } finally {
+      setActing(null);
+    }
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 4 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.2 }}
+      className="my-3 mx-auto w-full max-w-lg"
+    >
+      <div className={cn("overflow-hidden rounded-2xl border", borderCls, bgCls)}>
+        <div className="flex items-center justify-between gap-3 border-b border-edge/50 px-4 py-3">
+          <div className="flex min-w-0 items-center gap-2">
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-accent/12 text-accent">
+              {isAccepted ? (
+                <CheckCheck className="h-4 w-4" />
+              ) : isDeclined ? (
+                <X className="h-4 w-4 text-red-500" />
+              ) : (
+                <Briefcase className="h-4 w-4" />
+              )}
+            </span>
+            <div className="min-w-0">
+              <p className="truncate text-xs font-semibold text-heading font-raleway">
+                {isAccepted
+                  ? "Application shortlisted"
+                  : isDeclined
+                  ? "Application declined"
+                  : "New role intro"}
+              </p>
+              <p className="truncate text-[10px] uppercase tracking-[0.08em] text-subtle font-jetbrains">
+                {card.job_title}
+              </p>
+            </div>
+          </div>
+          <p className="shrink-0 text-[10px] text-subtle font-jetbrains">
+            {formatMessageTime(at)}
+          </p>
+        </div>
+
+        <div className="space-y-3 px-4 py-4">
+          {card.talent_name && (
+            <div>
+              <p className="text-sm font-bold text-heading font-raleway">
+                {card.talent_name}
+              </p>
+              {(card.headline || card.location) && (
+                <p className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-body font-raleway">
+                  {card.headline && <span>{card.headline}</span>}
+                  {card.location && (
+                    <span className="inline-flex items-center gap-1">
+                      <MapPin className="h-3 w-3 text-accent" />
+                      {card.location}
+                    </span>
+                  )}
+                </p>
+              )}
+            </div>
+          )}
+
+          {(card.skills?.length ?? 0) > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              {card.skills!.slice(0, 8).map((skill) => (
+                <span
+                  key={skill}
+                  className="rounded-full border border-edge bg-page-alt px-2 py-0.5 text-[10px] font-medium text-heading font-raleway"
+                >
+                  {skill}
+                </span>
+              ))}
+            </div>
+          )}
+
+          {card.intro_note && (
+            <div className="rounded-xl border border-edge bg-page-alt px-3 py-2.5">
+              <p className="text-[10px] uppercase tracking-[0.08em] text-subtle font-jetbrains">
+                Intro note
+              </p>
+              <p className="mt-1.5 whitespace-pre-wrap text-xs leading-relaxed text-body font-raleway">
+                {card.intro_note}
+              </p>
+            </div>
+          )}
+
+          {isAccepted && (
+            <p className="rounded-xl border border-accent/20 bg-accent/8 px-3 py-2 text-xs font-semibold text-accent font-raleway">
+              The company marked this candidate as shortlisted.
+            </p>
+          )}
+
+          {isDeclined && (
+            <p className="rounded-xl border border-red-500/20 bg-red-500/5 px-3 py-2 text-xs font-semibold text-red-500 font-raleway">
+              The company declined this application.
+            </p>
+          )}
+
+          {card.note && (
+            <p className="text-xs italic text-body font-raleway">
+              {card.note}
+            </p>
+          )}
+
+          {error && (
+            <p className="text-[11px] text-red-500 font-raleway">{error}</p>
+          )}
+
+          <div className="flex flex-wrap gap-2 pt-1">
+            {card.profile_href && viewerRole === "company" && (
+              <Link
+                href={card.profile_href}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-edge bg-page-alt px-3 py-1.5 text-[11px] font-semibold text-heading transition-all hover:border-accent/30 hover:text-accent font-raleway"
+              >
+                <ExternalLink className="h-3 w-3" />
+                View profile
+              </Link>
+            )}
+            {canAct && (
+              <>
+                <button
+                  type="button"
+                  disabled={!!acting}
+                  onClick={() => decide("declined")}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-red-500/30 bg-red-500/5 px-3 py-1.5 text-[11px] font-semibold text-red-500 transition-colors hover:bg-red-500/10 disabled:opacity-50 font-raleway"
+                >
+                  {acting === "declined" ? (
+                    <span className="h-3 w-3 animate-spin rounded-full border-2 border-red-500/30 border-t-red-500" />
+                  ) : (
+                    <X className="h-3 w-3" />
+                  )}
+                  Decline
+                </button>
+                <button
+                  type="button"
+                  disabled={!!acting}
+                  onClick={() => decide("accepted")}
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-accent px-3 py-1.5 text-[11px] font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50 font-raleway"
+                >
+                  {acting === "accepted" ? (
+                    <span className="h-3 w-3 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                  ) : (
+                    <CheckCheck className="h-3 w-3" />
+                  )}
+                  Shortlist
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  );
 }
 
 function InterviewCardBubble({

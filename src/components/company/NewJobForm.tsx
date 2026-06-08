@@ -105,7 +105,7 @@ export default function NewJobForm({
         "gt-200": "$200K+ / year",
         "varies": "Varies widely",
       };
-      setSalaryRange(MAP[salaryRange]);
+      queueMicrotask(() => setSalaryRange(MAP[salaryRange]));
     }
   }, [salaryRange]);
 

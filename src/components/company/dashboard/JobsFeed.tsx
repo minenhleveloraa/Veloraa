@@ -10,6 +10,7 @@ import {
   ExternalLink,
   MapPin,
   Plus,
+  UsersRound,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -34,6 +35,8 @@ export type JobsFeedItem = {
   location: string | null;
   description: string | null;
   createdAt: string;
+  pendingApplications?: number;
+  totalApplications?: number;
 };
 
 type JobStatus =
@@ -51,6 +54,10 @@ export default function JobsFeed({ jobs }: JobsFeedProps) {
   const [expandedId, setExpandedId] = useState<string | null>(
     jobs[0]?.id ?? null
   );
+  const pendingCount = jobs.reduce(
+    (total, job) => total + (job.pendingApplications ?? 0),
+    0
+  );
 
   return (
     <section className="relative flex h-full flex-col overflow-hidden rounded-2xl border border-edge bg-surface p-4 transition-all duration-300 hover:border-accent/25 hover:shadow-[0_24px_60px_-42px_rgba(10,46,26,0.3)] sm:rounded-3xl sm:p-6">
@@ -59,8 +66,17 @@ export default function JobsFeed({ jobs }: JobsFeedProps) {
           <h2 className="text-lg font-bold text-heading sm:text-xl font-raleway">
             Your recent jobs
           </h2>
-          <p className="mt-0.5 text-[11px] text-subtle font-jetbrains">
-            Most recent first
+          <p
+            className={cn(
+              "mt-0.5 text-[11px] font-jetbrains",
+              pendingCount > 0
+                ? "font-bold uppercase tracking-[0.08em] text-sky-700 dark:text-sky-300"
+                : "text-subtle"
+            )}
+          >
+            {pendingCount > 0
+              ? `${pendingCount} job alert${pendingCount === 1 ? "" : "s"}`
+              : "Most recent first"}
           </p>
         </div>
         <Link
@@ -140,6 +156,12 @@ function JobRow({
               {job.title}
             </p>
             <StatusPill status={job.status} />
+            {(job.pendingApplications ?? 0) > 0 && (
+              <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-sky-500/35 bg-sky-500/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.08em] text-sky-700 dark:border-sky-300/30 dark:bg-sky-400/10 dark:text-sky-300 font-jetbrains">
+                <UsersRound className="h-3 w-3" />
+                {job.pendingApplications} new
+              </span>
+            )}
           </div>
           <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-subtle font-jetbrains">
             {job.seniority && <span>{labelize(job.seniority)}</span>}
@@ -218,7 +240,7 @@ function JobRow({
                   href={`/company/jobs/${job.id}`}
                   className="ml-auto inline-flex items-center gap-1 text-accent transition-opacity hover:opacity-80"
                 >
-                  Open
+                  {(job.totalApplications ?? 0) > 0 ? "Review" : "Open"}
                   <ExternalLink className="h-3 w-3" />
                 </Link>
               </div>

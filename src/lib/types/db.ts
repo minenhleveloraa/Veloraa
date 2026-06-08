@@ -204,7 +204,31 @@ export interface JobRecommendation {
 }
 
 // ---------------------------------------------------------------------
-// Interview invitations (company → talent)
+// Job applications (talent -> company)
+// ---------------------------------------------------------------------
+
+export type JobApplicationStatus =
+  | "pending"
+  | "accepted"
+  | "declined"
+  | "withdrawn";
+
+export interface JobApplication {
+  id: string;
+  job_id: string;
+  company_user_id: string;
+  talent_user_id: string;
+  intro_note: string;
+  status: JobApplicationStatus;
+  status_note: string | null;
+  decided_at: string | null;
+  thread_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+// ---------------------------------------------------------------------
+// Interview invitations (company -> talent)
 // ---------------------------------------------------------------------
 
 export type InvitationStatus = "pending" | "accepted" | "declined";

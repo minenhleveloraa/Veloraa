@@ -9,8 +9,18 @@ import { redirect } from "next/navigation";
 import { requireApprovedCompany } from "@/lib/company/guard";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import type { CompanyJob, JobStatus } from "@/lib/types/db";
+import type {
+  CompanyJob,
+  JobApplication,
+  JobStatus,
+  Profile,
+  TalentAiAnalysis,
+  TalentApplication,
+} from "@/lib/types/db";
 import RecommendedTalentSection from "@/components/company/RecommendedTalentSection";
+import JobApplicationsSection, {
+  type JobApplicationItem,
+} from "@/components/company/JobApplicationsSection";
 
 export default async function CompanyJobDetailPage({
   params,
@@ -117,6 +127,73 @@ export default async function CompanyJobDetailPage({
     ])
   );
 
+  const { data: applicationRows } = await admin
+    .from("job_applications")
+    .select("*")
+    .eq("job_id", jobId)
+    .eq("company_user_id", profile.id)
+    .order("created_at", { ascending: false });
+  const applicationRecords = (applicationRows ?? []) as JobApplication[];
+  let applicationCards: JobApplicationItem[] = [];
+
+  if (applicationRecords.length > 0) {
+    const talentIds = Array.from(
+      new Set(applicationRecords.map((application) => application.talent_user_id))
+    );
+
+    const [profilesRes, appsRes, analysesRes] = await Promise.all([
+      admin.from("profiles").select("id, full_name").in("id", talentIds),
+      admin
+        .from("talent_applications")
+        .select("user_id, headline, skills, location")
+        .in("user_id", talentIds),
+      admin
+        .from("talent_ai_analyses")
+        .select("user_id, overall_score, expertise_level")
+        .in("user_id", talentIds),
+    ]);
+
+    const pMap = new Map(
+      ((profilesRes.data ?? []) as Pick<Profile, "id" | "full_name">[]).map(
+        (p) => [p.id, p]
+      )
+    );
+    const aMap = new Map(
+      (
+        (appsRes.data ?? []) as Pick<
+          TalentApplication,
+          "user_id" | "headline" | "skills" | "location"
+        >[]
+      ).map((a) => [a.user_id, a])
+    );
+    const sMap = new Map(
+      (
+        (analysesRes.data ?? []) as Pick<
+          TalentAiAnalysis,
+          "user_id" | "overall_score" | "expertise_level"
+        >[]
+      ).map((s) => [s.user_id, s])
+    );
+
+    applicationCards = applicationRecords.map((application) => ({
+      id: application.id,
+      talentUserId: application.talent_user_id,
+      fullName: pMap.get(application.talent_user_id)?.full_name ?? null,
+      headline: aMap.get(application.talent_user_id)?.headline ?? null,
+      location: aMap.get(application.talent_user_id)?.location ?? null,
+      skills: aMap.get(application.talent_user_id)?.skills ?? [],
+      overallScore:
+        sMap.get(application.talent_user_id)?.overall_score ?? null,
+      expertiseLevel:
+        sMap.get(application.talent_user_id)?.expertise_level ?? null,
+      introNote: application.intro_note,
+      status: application.status,
+      statusNote: application.status_note,
+      createdAt: application.created_at,
+      threadId: application.thread_id,
+    }));
+  }
+
   const statusConfig: Record<JobStatus, { label: string; cls: string }> = {
     draft: { label: "Draft", cls: "border-edge bg-page-alt text-body" },
     pending_review: {
@@ -200,14 +277,20 @@ export default async function CompanyJobDetailPage({
         </div>
       )}
 
-      {/* Recommended talent section — only for published jobs */}
+      {/* Talent sections for published jobs */}
       {job.status === "published" && (
-        <RecommendedTalentSection
-          jobId={job.id}
-          jobTitle={job.title}
-          talents={talentCards}
-          invitationsByTalent={Object.fromEntries(invitationsByTalent)}
-        />
+        <div className="space-y-8">
+          <RecommendedTalentSection
+            jobId={job.id}
+            jobTitle={job.title}
+            talents={talentCards}
+            invitationsByTalent={Object.fromEntries(invitationsByTalent)}
+          />
+          <JobApplicationsSection
+            jobTitle={job.title}
+            applications={applicationCards}
+          />
+        </div>
       )}
 
       {/* Job details */}

@@ -50,17 +50,21 @@ export default function RecommendedTalentSection({
 
   return (
     <>
-      <section className="rounded-2xl border border-edge bg-surface p-6">
-        <div className="flex items-center gap-2 mb-5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent/10 text-accent">
-            <Sparkles className="h-4 w-4" />
+      <section className="relative overflow-hidden rounded-2xl border border-accent/35 bg-accent/5 p-5 shadow-[0_26px_70px_-52px_rgba(22,163,74,0.55)] dark:border-accent/25 dark:bg-accent/8 sm:p-6">
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-accent" />
+        <div className="mb-5 flex items-start gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent/14 text-accent ring-1 ring-accent/25">
+            <Sparkles className="h-5 w-5" />
           </div>
-          <div>
-            <h2 className="text-sm font-semibold text-heading font-raleway">
+          <div className="min-w-0">
+            <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-accent font-jetbrains">
+              Veloraa recommended
+            </p>
+            <h2 className="mt-1 text-xl font-bold tracking-tight text-heading font-raleway sm:text-2xl">
               Recommended talent
             </h2>
-            <p className="text-xs text-body font-raleway">
-              Pre-vetted candidates curated by the Veloraa team
+            <p className="mt-1 text-xs leading-relaxed text-body font-raleway sm:text-sm">
+              Green means curated by Veloraa for this role.
             </p>
           </div>
         </div>
@@ -88,11 +92,11 @@ export default function RecommendedTalentSection({
               return (
                 <div
                   key={t.user_id}
-                  className="flex flex-col gap-4 rounded-xl border border-edge bg-page-alt p-4 transition-all duration-200 hover:border-accent/20 hover:shadow-[0_8px_30px_-16px_rgba(10,46,26,0.2)] sm:flex-row sm:items-start"
+                  className="flex flex-col gap-4 rounded-xl border border-accent/20 bg-surface p-4 transition-all duration-200 hover:border-accent/45 hover:shadow-[0_18px_44px_-32px_rgba(22,163,74,0.45)] dark:bg-page-alt sm:flex-row sm:items-start"
                 >
                   {/* Avatar + info */}
                   <div className="flex min-w-0 flex-1 items-start gap-3">
-                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-accent/15 text-accent text-sm font-bold font-jetbrains">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-accent/15 text-sm font-bold text-accent ring-1 ring-accent/25 font-jetbrains">
                       {initials(t.full_name)}
                     </div>
                     <div className="min-w-0 flex-1">

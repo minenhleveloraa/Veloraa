@@ -1,8 +1,10 @@
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import type {
   AssessmentStatus,
+  CompanyJob,
   Profile,
   ReviewStatus,
   TalentAiAnalysis,
@@ -40,6 +42,7 @@ import TalentDashboardBackdrop from "@/components/talent/dashboard/TalentDashboa
 import TalentActivityPulse from "@/components/talent/dashboard/TalentActivityPulse";
 import type { PulseDay } from "@/components/talent/dashboard/TalentActivityPulse";
 import JobRecommendationsFeed from "@/components/talent/dashboard/JobRecommendationsFeed";
+import type { RecommendedJob } from "@/components/talent/dashboard/JobRecommendationsFeed";
 import CompaniesInterestedCard from "@/components/talent/dashboard/CompaniesInterestedCard";
 import ApplicationFunnelCard from "@/components/talent/dashboard/ApplicationFunnelCard";
 import TalentUpgradeCard from "@/components/talent/dashboard/TalentUpgradeCard";
@@ -82,12 +85,14 @@ export default async function TalentDashboardPage() {
     app?.review_status === "approved" &&
     app.interview_status === "passed"
   ) {
+    const dashboardJobs = await loadTalentDashboardJobs(user.id);
     return (
       <LiveTalentDashboard
         firstName={firstName}
         fullName={profile?.full_name ?? null}
         app={app}
         analysis={analysis}
+        dashboardJobs={dashboardJobs}
       />
     );
   }
@@ -100,6 +105,77 @@ export default async function TalentDashboardPage() {
       analysis={analysis}
     />
   );
+}
+
+async function loadTalentDashboardJobs(
+  talentUserId: string
+): Promise<RecommendedJob[]> {
+  const admin = createAdminClient();
+  const [{ data: jobRows }, { data: recRows }] = await Promise.all([
+    admin
+      .from("company_jobs")
+      .select("*")
+      .eq("status", "published")
+      .order("created_at", { ascending: false })
+      .limit(6),
+    admin
+      .from("job_recommendations")
+      .select("job_id, note")
+      .eq("talent_user_id", talentUserId),
+  ]);
+
+  const jobs = (jobRows ?? []) as CompanyJob[];
+  if (jobs.length === 0) return [];
+
+  const recommendations = new Set(
+    ((recRows ?? []) as { job_id: string; note: string | null }[]).map(
+      (row) => row.job_id
+    )
+  );
+
+  const companyIds = Array.from(new Set(jobs.map((job) => job.company_id)));
+  const { data: companyRows } = await admin
+    .from("company_applications")
+    .select("user_id, legal_name")
+    .in("user_id", companyIds);
+  const companyByUserId = new Map(
+    ((companyRows ?? []) as { user_id: string; legal_name: string | null }[]).map(
+      (company) => [company.user_id, company.legal_name ?? "Company"]
+    )
+  );
+
+  return jobs
+    .map((job): RecommendedJob => {
+      const recommended = recommendations.has(job.id);
+      return {
+        id: job.id,
+        href: `/talent/jobs/${job.id}`,
+        company: companyByUserId.get(job.company_id) ?? "Company",
+        title: job.title,
+        location: job.location || job.work_arrangement,
+        stack: job.skills ?? [],
+        compensation: job.salary_range || "Shared later",
+        matchScore: recommended ? 94 : 82,
+        type: job.employment_type,
+        arrangement: job.work_arrangement,
+        description: job.description,
+        postedAgo: formatDashboardJobAge(job.created_at),
+        recommended,
+      };
+    })
+    .sort((a, b) => Number(!!b.recommended) - Number(!!a.recommended));
+}
+
+function formatDashboardJobAge(iso: string): string {
+  const posted = new Date(iso);
+  if (Number.isNaN(posted.getTime())) return "Recently";
+  const diffMinutes = Math.floor((Date.now() - posted.getTime()) / 60_000);
+  if (diffMinutes < 60) return `${Math.max(1, diffMinutes)}m ago`;
+  const diffHours = Math.floor(diffMinutes / 60);
+  if (diffHours < 24) return `${diffHours}h ago`;
+  const diffDays = Math.floor(diffHours / 24);
+  if (diffDays < 7) return `${diffDays}d ago`;
+  return posted.toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 
 // =====================================================================
@@ -495,11 +571,13 @@ function LiveTalentDashboard({
   fullName,
   app,
   analysis,
+  dashboardJobs,
 }: {
   firstName: string;
   fullName: string | null;
   app: TalentApplication;
   analysis: TalentAiAnalysis | null;
+  dashboardJobs: RecommendedJob[];
 }) {
   const displayName = fullName ?? firstName;
   const headline = app.headline ?? "Open to opportunities";
@@ -702,7 +780,7 @@ function LiveTalentDashboard({
           {/* Left column â€” 2/3 */}
           <div className="space-y-4 sm:space-y-6 lg:col-span-2">
             <TalentActivityPulse days={pulseDays} prevWeekTotal={0} />
-            <JobRecommendationsFeed />
+            <JobRecommendationsFeed jobs={dashboardJobs} />
           </div>
 
           {/* Right column â€” 1/3 */}

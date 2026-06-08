@@ -1,12 +1,16 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ArrowUpRight, Briefcase, Sparkles } from "lucide-react";
+import { Briefcase, Sparkles } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import TalentRouteFrame from "@/components/talent/TalentRouteFrame";
 import JobsBoardClient, {
   type JobCard,
 } from "@/components/talent/jobs/JobsBoardClient";
-import type { CompanyJob, Profile } from "@/lib/types/db";
+import type {
+  CompanyJob,
+  JobApplicationStatus,
+  Profile,
+} from "@/lib/types/db";
 
 export const metadata = { title: "Jobs · Veloraa" };
 
@@ -26,14 +30,18 @@ export default async function TalentJobsPage() {
   const profile = profileRow as Pick<Profile, "role"> | null;
   if (!profile || profile.role !== "talent") redirect("/profile");
 
-  // 1. All published jobs + recommendations for this talent in parallel
+  const admin = createAdminClient();
+
+  // 1. All published jobs + recommendations for this talent in parallel.
+  // Published jobs are company-owned rows, so this server route uses the
+  // service-role client after verifying the viewer is a signed-in talent.
   const [{ data: jobRows }, { data: recRows }] = await Promise.all([
-    supabase
+    admin
       .from("company_jobs")
       .select("*")
       .eq("status", "published")
       .order("created_at", { ascending: false }),
-    supabase
+    admin
       .from("job_recommendations")
       .select("job_id, note")
       .eq("talent_user_id", user.id),
@@ -42,12 +50,31 @@ export default async function TalentJobsPage() {
   const jobs = (jobRows ?? []) as CompanyJob[];
   const recs = (recRows ?? []) as { job_id: string; note: string | null }[];
 
+  let applications: Map<string, JobApplicationStatus> = new Map();
+  if (jobs.length > 0) {
+    const { data: applicationRows } = await admin
+      .from("job_applications")
+      .select("job_id, status")
+      .eq("talent_user_id", user.id)
+      .in(
+        "job_id",
+        jobs.map((j) => j.id)
+      );
+
+    applications = new Map(
+      ((applicationRows ?? []) as {
+        job_id: string;
+        status: JobApplicationStatus;
+      }[]).map((a) => [a.job_id, a.status])
+    );
+  }
+
   // 2. Resolve company names from company_applications
   const uniqueCompanyIds = [...new Set(jobs.map((j) => j.company_id))];
   let companyNames: Map<string, string> = new Map();
 
   if (uniqueCompanyIds.length > 0) {
-    const { data: companyApps } = await supabase
+    const { data: companyApps } = await admin
       .from("company_applications")
       .select("user_id, legal_name")
       .in("user_id", uniqueCompanyIds);
@@ -79,6 +106,7 @@ export default async function TalentJobsPage() {
     created_at: j.created_at,
     recommended: recMap.has(j.id),
     recommendation_note: recMap.get(j.id) ?? null,
+    application_status: applications.get(j.id) ?? null,
   }));
 
   // Recommended first, then the rest ordered by newest
@@ -154,17 +182,10 @@ export default async function TalentJobsPage() {
               Best next move
             </p>
             <p className="mt-2.5 text-[13px] leading-relaxed text-body font-raleway sm:mt-3 sm:text-sm">
-              If a role looks right, tap the card to expand it and read the
-              full description. Then message the Veloraa team for hiring
-              context before you commit.
+              If a role looks right, open the dedicated role page and send a
+              short introduction note. It lands in the company&apos;s job review
+              queue, and messaging opens only if they shortlist you.
             </p>
-            <Link
-              href="/talent/messages"
-              className="mt-3 inline-flex items-center gap-1.5 text-[11px] font-semibold text-accent transition-opacity hover:opacity-80 font-raleway sm:mt-4 sm:text-xs"
-            >
-              Go to messages
-              <ArrowUpRight className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-            </Link>
           </section>
         </aside>
       </div>

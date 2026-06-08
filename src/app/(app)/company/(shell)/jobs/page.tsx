@@ -7,12 +7,28 @@ import {
   Filter,
   Plus,
   Search,
+  UsersRound,
   XCircle,
 } from "lucide-react";
 import { requireApprovedCompany } from "@/lib/company/guard";
 import { planFor } from "@/lib/company/options";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
-import type { CompanyJob, JobStatus } from "@/lib/types/db";
+import type { CompanyJob, JobApplicationStatus, JobStatus } from "@/lib/types/db";
+
+type JobApplicationCounts = {
+  total: number;
+  pending: number;
+  accepted: number;
+  declined: number;
+};
+
+const emptyApplicationCounts: JobApplicationCounts = {
+  total: 0,
+  pending: 0,
+  accepted: 0,
+  declined: 0,
+};
 
 export default async function CompanyJobsPage() {
   const { profile, application } = await requireApprovedCompany();
@@ -27,6 +43,33 @@ export default async function CompanyJobsPage() {
     .order("created_at", { ascending: false });
 
   const jobs = (jobRows as CompanyJob[] | null) ?? [];
+  const applicationCounts = new Map<string, JobApplicationCounts>();
+
+  if (jobs.length > 0) {
+    const admin = createAdminClient();
+    const { data: applicationRows } = await admin
+      .from("job_applications")
+      .select("job_id, status")
+      .eq("company_user_id", profile.id)
+      .in(
+        "job_id",
+        jobs.map((job) => job.id)
+      );
+
+    for (const row of (applicationRows ?? []) as {
+      job_id: string;
+      status: JobApplicationStatus;
+    }[]) {
+      const current = applicationCounts.get(row.job_id) ?? {
+        ...emptyApplicationCounts,
+      };
+      current.total += 1;
+      if (row.status === "pending") current.pending += 1;
+      if (row.status === "accepted") current.accepted += 1;
+      if (row.status === "declined") current.declined += 1;
+      applicationCounts.set(row.job_id, current);
+    }
+  }
 
   // Count active (non-rejected) jobs for quota display
   const activeJobCount = jobs.filter((j) => j.status !== "rejected").length;
@@ -107,7 +150,11 @@ export default async function CompanyJobsPage() {
         ) : (
           <ul className="divide-y divide-edge overflow-hidden rounded-2xl border border-edge bg-surface">
             {jobs.map((j) => (
-              <JobRow key={j.id} job={j} />
+              <JobRow
+                key={j.id}
+                job={j}
+                counts={applicationCounts.get(j.id) ?? emptyApplicationCounts}
+              />
             ))}
           </ul>
         )}
@@ -142,7 +189,13 @@ function EmptyJobs() {
   );
 }
 
-function JobRow({ job }: { job: CompanyJob }) {
+function JobRow({
+  job,
+  counts,
+}: {
+  job: CompanyJob;
+  counts: JobApplicationCounts;
+}) {
   const statusConfig: Record<
     JobStatus,
     { label: string; cls: string; icon: React.ReactNode }
@@ -190,12 +243,24 @@ function JobRow({ job }: { job: CompanyJob }) {
             {cfg.icon}
             {cfg.label}
           </span>
+          {counts.pending > 0 && (
+            <span className="inline-flex items-center gap-1 rounded-full border border-sky-500/35 bg-sky-500/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.08em] text-sky-700 dark:border-sky-300/30 dark:bg-sky-400/10 dark:text-sky-300 font-jetbrains">
+              <UsersRound className="h-3 w-3" />
+              {counts.pending} new
+            </span>
+          )}
         </div>
         <p className="mt-1 truncate text-xs text-body font-raleway">
           {job.location || job.work_arrangement} · {job.seniority} · {job.role_category}
         </p>
       </div>
       <div className="flex items-center gap-4 text-xs text-body font-raleway">
+        {counts.total > 0 && (
+          <span className="hidden items-center gap-1 text-[11px] font-semibold text-heading sm:inline-flex">
+            <UsersRound className="h-3.5 w-3.5 text-sky-700 dark:text-sky-300" />
+            {counts.total} interested
+          </span>
+        )}
         <span className="text-[11px] text-subtle font-jetbrains">
           {new Date(job.created_at).toLocaleDateString()}
         </span>

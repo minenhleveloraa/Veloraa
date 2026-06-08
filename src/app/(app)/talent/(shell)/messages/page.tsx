@@ -14,8 +14,13 @@ export const revalidate = 0;
  * company approval. `company_candidate` threads appear when a vetted
  * employer reaches out.
  */
-export default async function TalentMessagesPage() {
+export default async function TalentMessagesPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ thread?: string }>;
+}) {
   const supabase = await createClient();
+  const initialThreadId = (await searchParams)?.thread;
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -43,6 +48,7 @@ export default async function TalentMessagesPage() {
         viewerUserId={user.id}
         viewerName={displayName}
         viewerInitials={viewerInitials}
+        initialThreadId={initialThreadId}
       />
     </div>
   );
